@@ -208,31 +208,35 @@ def draw_polyline(polyline, color, img):
 
 
 if __name__ == "__main__":
-    h, w = 700, 700
-    img = np.zeros((h, w, 3), np.uint8)
+    def main():
+        h, w = 700, 700
+        img = np.zeros((h, w, 3), np.uint8)
+        
+        draw_polyline(first_polyline, (255, 0, 0), img)
+        print('first_polyline: ', first_polyline)
+        draw_polyline(second_polyline, (0, 255, 255), img)
+        print('second_polyline: ', second_polyline)
+        
+        polylines_intersections_counter = PolylinesIntersectionsCounter()
+        
+        intersection_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = polylines_intersections_counter.count_intersections(
+            first_polyline,
+            second_polyline)
+        print('Number of intersections: ', intersection_count)
+        print('Intersection points: ', intersection_points)
+        
+        direction = polylines_intersections_counter.get_intersection_direction(intersection_points,
+                                                                               first_point_of_the_first_segment,
+                                                                               last_point_of_the_last_segment)
+        print('Direction: ', direction)
+        
+        draw_points(intersection_points, (0, 0, 255), img)
+        # draw_points(first_polyline_aux, (0, 255, 0))
+        # draw_points(second_polyline_aux, (255, 255, 0))
+        
+        cv2.imshow("image", img)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
     
-    draw_polyline(first_polyline, (255, 0, 0), img)
-    print('first_polyline: ', first_polyline)
-    draw_polyline(second_polyline, (0, 255, 255), img)
-    print('second_polyline: ', second_polyline)
     
-    polylines_intersections_counter = PolylinesIntersectionsCounter()
-    
-    intersection_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = polylines_intersections_counter.count_intersections(
-        first_polyline,
-        second_polyline)
-    print('Number of intersections: ', intersection_count)
-    print('Intersection points: ', intersection_points)
-    
-    direction = polylines_intersections_counter.get_intersection_direction(intersection_points,
-                                                                           first_point_of_the_first_segment,
-                                                                           last_point_of_the_last_segment)
-    print('Direction: ', direction)
-    
-    draw_points(intersection_points, (0, 0, 255), img)
-    # draw_points(first_polyline_aux, (0, 255, 0))
-    # draw_points(second_polyline_aux, (255, 255, 0))
-    
-    cv2.imshow("image", img)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
+    main()
