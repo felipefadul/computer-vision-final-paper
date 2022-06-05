@@ -8,6 +8,17 @@ class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+    
+    def __eq__(self, other):
+        if isinstance(other, Point):
+            return self.x == other.x and self.y == other.y
+        return False
+    
+    def __str__(self):
+        return f'{(self.x, self.y)}'
+    
+    def __repr__(self):
+        return f'{(self.x, self.y)}'
 
 
 pt1 = Point(100, 100)
@@ -153,17 +164,16 @@ def draw_polyline(polyline, color):
     for point in polyline:
         polyline_aux.append((point.x, point.y))
     cv2.polylines(img, np.int32([polyline_aux]), False, color, 10)
-    return polyline_aux
 
 
 if __name__ == "__main__":
     h, w = 700, 700
     img = np.zeros((h, w, 3), np.uint8)
     
-    first_polyline_aux = draw_polyline(first_polyline, (255, 0, 0))
-    print('first_polyline_aux: ', first_polyline_aux)
-    second_polyline_aux = draw_polyline(second_polyline, (0, 255, 255))
-    print('second_polyline_aux: ', second_polyline_aux)
+    draw_polyline(first_polyline, (255, 0, 0), img)
+    print('first_polyline: ', first_polyline)
+    draw_polyline(second_polyline, (0, 255, 255), img)
+    print('second_polyline: ', second_polyline)
     
     polylines_intersections_counter = PolylinesIntersectionsCounter()
     
