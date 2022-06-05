@@ -109,11 +109,16 @@ def draw_points(points_list, color, img):
         cv2.circle(img, np.int32((point.x, point.y)), 0, color, 10)
 
 
-def draw_polyline(polyline, color, img):
+def draw_polyline(polyline, other_points_color, img, first_point_color=(255, 255, 0)):
     polyline_aux = []
-    for point in polyline:
+    first_point = (0, 0)
+    for i, point in enumerate(polyline):
         polyline_aux.append((point.x, point.y))
-    cv2.polylines(img, np.int32([polyline_aux]), False, color, 10)
+        if i == 0:
+            first_point = (point.x, point.y)
+    cv2.polylines(img, np.int32([polyline_aux]), False, other_points_color, 10)
+    # Painting the first point with a different color help us to check the direction when debugging
+    cv2.circle(img, np.int32(first_point), 0, first_point_color, 10)
 
 
 if __name__ == "__main__":
@@ -124,31 +129,38 @@ if __name__ == "__main__":
     # second_polyline = [Point(0, 0), Point(100, 100), Point(0, 200)]
     
     # Test 2
-    # first_polyline = [Point(100, 100), Point(200, 200), Point(200, 300), Point(400, 500), Point(600, 300), Point(300, 100)]
+    # first_polyline = [Point(100, 100), Point(200, 200), Point(200, 300), Point(400, 500), Point(600, 300),
+    #                   Point(300, 100)]
     # second_polyline = [Point(100, 400), Point(300, 500), Point(400, 300), Point(700, 400)]
     
     # Test 3
-    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200),
+    #                   Point(200, 300)]
     # second_polyline = [Point(100, 400), Point(300, 500), Point(400, 300), Point(700, 400)]
     
     # Test 4
-    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 600), Point(200, 200), Point(200, 300)]
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 600), Point(200, 200),
+    #                   Point(200, 300)]
     # second_polyline = [Point(100, 400), Point(300, 500), Point(400, 300), Point(700, 400)]
     
     # Test 5
-    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200),
+    #                   Point(200, 300)]
     # second_polyline = [Point(100, 400), Point(300, 500), Point(500, 300), Point(700, 400)]
     
     # Test 6
-    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200),
+    #                   Point(200, 300)]
     # second_polyline = [Point(100, 400), Point(300, 500), Point(300, 400), Point(500, 300), Point(700, 400)]
     
     # Test 7
-    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200),
+    #                   Point(200, 300)]
     # second_polyline = [Point(100, 400), Point(300, 500), Point(400, 500), Point(500, 300), Point(700, 400)]
     
     # Test 8
-    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200),
+    #                   Point(200, 300)]
     # second_polyline = [Point(300, 500), Point(500, 300)]
     
     # Test 9
@@ -164,26 +176,52 @@ if __name__ == "__main__":
     # second_polyline = [Point(200, 300), Point(350, 400), Point(550, 300)]
     
     # Test 12
-    first_polyline = default_line
-    second_polyline = [Point(200, 300), Point(350, 400), Point(200, 500)]
-    
+    # first_polyline = default_line
+    # second_polyline = [Point(200, 300), Point(350, 400), Point(200, 500)]
     
     # Test 13
     # first_polyline = default_line
-    # second_polyline = [Point(200, 300), Point(350, 450), Point(200, 500)]
+    # second_polyline = [Point(200, 500), Point(350, 400), Point(200, 300)]
     
     # Test 14
     # first_polyline = default_line
+    # second_polyline = [Point(200, 300), Point(350, 450), Point(200, 500)]
+    
+    # Test 15
+    # first_polyline = default_line
+    # second_polyline = [Point(350, 450), Point(200, 500), Point(200, 300)]
+    
+    # Test 16
+    # first_polyline = default_line
     # second_polyline = [Point(200, 300), Point(300, 300)]
+    
+    # Test 17
+    # first_polyline = default_line
+    # second_polyline = [Point(250, 300), Point(250, 500), Point(350, 300), Point(350, 500), Point(450, 300),
+    #                    Point(450, 500)]
+    
+    # Test 18
+    # first_polyline = default_line
+    # second_polyline = [Point(450, 500), Point(450, 300), Point(350, 500), Point(350, 300), Point(250, 500),
+    #                    Point(250, 300)]
+    
+    # Test 19
+    # first_polyline = default_line
+    # second_polyline = [Point(250, 300), Point(250, 500), Point(350, 300), Point(350, 500), Point(450, 300)]
+    
+    # Test 20
+    first_polyline = default_line
+    second_polyline = [Point(450, 500), Point(450, 300), Point(350, 500), Point(350, 300), Point(250, 500)]
+    
     
     def main():
         h, w = 700, 700
         img = np.zeros((h, w, 3), np.uint8)
         
         draw_polyline(first_polyline, (255, 0, 0), img)
-        print('first_polyline: ', first_polyline)
+        print('First polyline: ', first_polyline)
         draw_polyline(second_polyline, (0, 255, 255), img)
-        print('second_polyline: ', second_polyline)
+        print('Second polyline: ', second_polyline)
         
         polylines_intersections_counter = PolylinesIntersectionsCounter()
         
@@ -199,8 +237,8 @@ if __name__ == "__main__":
         print('Direction: ', direction)
         
         draw_points(intersection_points, (0, 0, 255), img)
-        # draw_points(first_polyline_aux, (0, 255, 0))
-        # draw_points(second_polyline_aux, (255, 255, 0))
+        # draw_points(first_polyline, (0, 255, 0), img)
+        # draw_points(second_polyline, (255, 255, 0), img)
         
         cv2.imshow("image", img)
         cv2.waitKey()
