@@ -1,6 +1,7 @@
 import unittest
 
-from ..count_polylines_intersections import Point, DirectionOptions, PolylinesIntersectionsCounter
+from src.count_polylines_intersections import DirectionOptions, PolylinesIntersectionsCounter
+from src.point import Point
 
 
 class CountIntersectionTest(unittest.TestCase):
