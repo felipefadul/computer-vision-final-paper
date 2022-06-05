@@ -1,3 +1,5 @@
+from enum import Enum
+
 import cv2
 import numpy as np
 
@@ -40,6 +42,8 @@ pt16 = Point(500, 400)
 pt17 = Point(600, 200)
 
 default_line = [pt14, pt15, pt16, pt17]
+
+DirectionOptions = Enum("DirectionOptions", ["UP", "DOWN"])
 
 # Test 1
 # first_polyline = [Point(100, 50), Point(100, 400)]
@@ -90,6 +94,14 @@ first_polyline = default_line
 second_polyline = [Point(200, 300), Point(350, 400), Point(200, 500)]
 
 
+# Test 13
+# first_polyline = default_line
+# second_polyline = [Point(200, 300), Point(350, 450), Point(200, 500)]
+
+# Test 14
+# first_polyline = default_line
+# second_polyline = [Point(200, 300), Point(300, 300)]
+
 class PolylinesIntersectionsCounter:
     
     def find_line_segments_intersection(self, s1, s2, t1, t2):
@@ -131,19 +143,25 @@ class PolylinesIntersectionsCounter:
                 (s1.y - yi) * (yi - s2.y) >= 0 and \
                 (t1.x - xi) * (xi - t2.x) >= 0 and \
                 (t1.y - yi) * (yi - t2.y) >= 0:
-            return round(xi, 0), round(yi, 0)  # Return the intersection point
+            return Point(round(xi, 0), round(yi, 0))  # Return the intersection point
         else:
             return None
     
     def count_intersections(self, polyline1, polyline2):
         intersection_points_list = []
         intersections_count = 0
+        first_point_of_the_first_segment = Point(0, 0)
+        last_point_of_the_last_segment = Point(0, 0)
         
         for i, p1_first_point in enumerate(polyline1[:-1]):
             p1_second_point = polyline1[i + 1]
             
             for j, p2_first_point in enumerate(polyline2[:-1]):
                 p2_second_point = polyline2[j + 1]
+                if j == 0:
+                    first_point_of_the_first_segment = p2_first_point
+                if j == len(polyline2) - 2:
+                    last_point_of_the_last_segment = p2_second_point
                 
                 intersection_point = self.find_line_segments_intersection(p1_first_point, p1_second_point,
                                                                           p2_first_point, p2_second_point)
@@ -151,15 +169,38 @@ class PolylinesIntersectionsCounter:
                     intersection_points_list.append(intersection_point)
                     intersections_count += 1
         
-        return intersections_count, intersection_points_list
+        return intersections_count, intersection_points_list, first_point_of_the_first_segment, last_point_of_the_last_segment
+    
+    def get_intersection_direction(self,
+                                   intersection_points_list,
+                                   first_point_of_the_first_segment,
+                                   last_point_of_the_last_segment):
+        # Check if the list is empty or if the number of intersection points is even, which means that the polyline is
+        # in the same subspace determined by the default polyline and hasn't crossed it.
+        if not intersection_points_list or len(intersection_points_list) % 2 == 0:
+            return None
+        
+        # If the first y-point of the first segment is above the y-point of the first intersection AND the last y-point
+        # of the last segment is below the y-point of the last intersection, it means the direction is DOWN.
+        if (first_point_of_the_first_segment.y < intersection_points_list[0].y and
+                last_point_of_the_last_segment.y > intersection_points_list[-1].y):
+            return DirectionOptions.DOWN
+        
+        # If the first y-point of the first segment is below the y-point of the first intersection AND the last y-point
+        # of the last segment is above the y-point of the last intersection, it means the direction is UP.
+        if (first_point_of_the_first_segment.y > intersection_points_list[0].y and
+                last_point_of_the_last_segment.y < intersection_points_list[-1].y):
+            return DirectionOptions.UP
+        
+        return None
 
 
-def draw_points(points_list, color):
+def draw_points(points_list, color, img):
     for point in points_list:
-        cv2.circle(img, np.int32(point), 0, color, 10)
+        cv2.circle(img, np.int32((point.x, point.y)), 0, color, 10)
 
 
-def draw_polyline(polyline, color):
+def draw_polyline(polyline, color, img):
     polyline_aux = []
     for point in polyline:
         polyline_aux.append((point.x, point.y))
@@ -177,12 +218,18 @@ if __name__ == "__main__":
     
     polylines_intersections_counter = PolylinesIntersectionsCounter()
     
-    intersection_count, intersection_points = polylines_intersections_counter.count_intersections(first_polyline,
-                                                                                                  second_polyline)
+    intersection_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = polylines_intersections_counter.count_intersections(
+        first_polyline,
+        second_polyline)
     print('Number of intersections: ', intersection_count)
     print('Intersection points: ', intersection_points)
     
-    draw_points(intersection_points, (0, 0, 255))
+    direction = polylines_intersections_counter.get_intersection_direction(intersection_points,
+                                                                           first_point_of_the_first_segment,
+                                                                           last_point_of_the_last_segment)
+    print('Direction: ', direction)
+    
+    draw_points(intersection_points, (0, 0, 255), img)
     # draw_points(first_polyline_aux, (0, 255, 0))
     # draw_points(second_polyline_aux, (255, 255, 0))
     
