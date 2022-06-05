@@ -3,104 +3,12 @@ from enum import Enum
 import cv2
 import numpy as np
 
+from src.point import Point
 
 # A Python3 program to find if 2 given line segments intersect or not
 
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-    
-    def __eq__(self, other):
-        if isinstance(other, Point):
-            return self.x == other.x and self.y == other.y
-        return False
-    
-    def __str__(self):
-        return f'{(self.x, self.y)}'
-    
-    def __repr__(self):
-        return f'{(self.x, self.y)}'
-
-
-pt1 = Point(100, 100)
-pt2 = Point(500, 100)
-pt3 = Point(500, 500)
-pt4 = Point(100, 500)
-pt5 = Point(200, 200)
-pt6 = Point(200, 300)
-pt7 = Point(400, 500)
-pt8 = Point(600, 300)
-pt9 = Point(300, 100)
-pt10 = Point(100, 400)
-pt11 = Point(300, 500)
-pt12 = Point(400, 300)
-pt13 = Point(700, 400)
-pt14 = Point(100, 200)
-pt15 = Point(200, 400)
-pt16 = Point(500, 400)
-pt17 = Point(600, 200)
-
-default_line = [pt14, pt15, pt16, pt17]
-
 DirectionOptions = Enum("DirectionOptions", ["UP", "DOWN"])
 
-# Test 1
-# first_polyline = [Point(100, 50), Point(100, 400)]
-# second_polyline = [Point(0, 0), Point(100, 100), Point(0, 200)]
-
-# Test 2
-# first_polyline = [pt1, pt5, pt6, pt7, pt8, pt9]
-# second_polyline = [pt10, pt11, pt12, pt13]
-
-# Test 3
-# first_polyline = [pt1, pt2, pt3, pt4, pt5, pt6]
-# second_polyline = [pt10, pt11, pt12, pt13]
-
-# Test 4
-# first_polyline = [pt1, pt2, pt3, Point(100, 600), pt5, pt6]
-# second_polyline = [pt10, pt11, pt12, pt13]
-
-# Test 5
-# first_polyline = [pt1, pt2, pt3, pt4, pt5, pt6]
-# second_polyline = [pt10, pt11, Point(500, 300), pt13]
-
-# Test 6
-# first_polyline = [pt1, pt2, pt3, pt4, pt5, pt6]
-# second_polyline = [pt10, pt11, Point(300, 400), Point(500, 300), pt13]
-
-# Test 7
-# first_polyline = [pt1, pt2, pt3, pt4, pt5, pt6]
-# second_polyline = [pt10, pt11, Point(400, 500), Point(500, 300), pt13]
-
-# Test 8
-# first_polyline = [pt1, pt2, pt3, pt4, pt5, pt6]
-# second_polyline = [pt11, Point(500, 300)]
-
-# Test 9
-# first_polyline = default_line
-# second_polyline = [pt11, Point(500, 300)]
-
-# Test 10
-# first_polyline = default_line
-# second_polyline = [Point(200, 300), Point(300, 400), Point(400, 300)]
-
-# Test 11
-# first_polyline = default_line
-# second_polyline = [Point(200, 300), Point(350, 400), Point(550, 300)]
-
-# Test 12
-first_polyline = default_line
-second_polyline = [Point(200, 300), Point(350, 400), Point(200, 500)]
-
-
-# Test 13
-# first_polyline = default_line
-# second_polyline = [Point(200, 300), Point(350, 450), Point(200, 500)]
-
-# Test 14
-# first_polyline = default_line
-# second_polyline = [Point(200, 300), Point(300, 300)]
 
 class PolylinesIntersectionsCounter:
     
@@ -209,6 +117,65 @@ def draw_polyline(polyline, color, img):
 
 
 if __name__ == "__main__":
+    default_line = [Point(100, 200), Point(200, 400), Point(500, 400), Point(600, 200)]
+    
+    # Test 1
+    # first_polyline = [Point(100, 50), Point(100, 400)]
+    # second_polyline = [Point(0, 0), Point(100, 100), Point(0, 200)]
+    
+    # Test 2
+    # first_polyline = [Point(100, 100), Point(200, 200), Point(200, 300), Point(400, 500), Point(600, 300), Point(300, 100)]
+    # second_polyline = [Point(100, 400), Point(300, 500), Point(400, 300), Point(700, 400)]
+    
+    # Test 3
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # second_polyline = [Point(100, 400), Point(300, 500), Point(400, 300), Point(700, 400)]
+    
+    # Test 4
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 600), Point(200, 200), Point(200, 300)]
+    # second_polyline = [Point(100, 400), Point(300, 500), Point(400, 300), Point(700, 400)]
+    
+    # Test 5
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # second_polyline = [Point(100, 400), Point(300, 500), Point(500, 300), Point(700, 400)]
+    
+    # Test 6
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # second_polyline = [Point(100, 400), Point(300, 500), Point(300, 400), Point(500, 300), Point(700, 400)]
+    
+    # Test 7
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # second_polyline = [Point(100, 400), Point(300, 500), Point(400, 500), Point(500, 300), Point(700, 400)]
+    
+    # Test 8
+    # first_polyline = [Point(100, 100), Point(500, 100), Point(500, 500), Point(100, 500), Point(200, 200), Point(200, 300)]
+    # second_polyline = [Point(300, 500), Point(500, 300)]
+    
+    # Test 9
+    # first_polyline = default_line
+    # second_polyline = [Point(300, 500), Point(500, 300)]
+    
+    # Test 10
+    # first_polyline = default_line
+    # second_polyline = [Point(200, 300), Point(300, 400), Point(400, 300)]
+    
+    # Test 11
+    # first_polyline = default_line
+    # second_polyline = [Point(200, 300), Point(350, 400), Point(550, 300)]
+    
+    # Test 12
+    first_polyline = default_line
+    second_polyline = [Point(200, 300), Point(350, 400), Point(200, 500)]
+    
+    
+    # Test 13
+    # first_polyline = default_line
+    # second_polyline = [Point(200, 300), Point(350, 450), Point(200, 500)]
+    
+    # Test 14
+    # first_polyline = default_line
+    # second_polyline = [Point(200, 300), Point(300, 300)]
+    
     def main():
         h, w = 700, 700
         img = np.zeros((h, w, 3), np.uint8)
