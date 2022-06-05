@@ -104,7 +104,8 @@ second_polyline = [Point(200, 300), Point(350, 400), Point(200, 500)]
 
 class PolylinesIntersectionsCounter:
     
-    def find_line_segments_intersection(self, s1, s2, t1, t2):
+    @staticmethod
+    def find_line_segments_intersection(s1, s2, t1, t2):
         """Method to check the intersection of two line segments. Returns
         None if no intersection, or a coordinate indicating the intersection.
 
@@ -171,8 +172,8 @@ class PolylinesIntersectionsCounter:
         
         return intersections_count, intersection_points_list, first_point_of_the_first_segment, last_point_of_the_last_segment
     
-    def get_intersection_direction(self,
-                                   intersection_points_list,
+    @staticmethod
+    def get_intersection_direction(intersection_points_list,
                                    first_point_of_the_first_segment,
                                    last_point_of_the_last_segment):
         # Check if the list is empty or if the number of intersection points is even, which means that the polyline is
