@@ -10,7 +10,7 @@ import numpy as np
 from imutils.video import FPS
 
 from centroid_tracker import CentroidTracker
-from count_polylines_intersections import Point
+from count_polylines_intersections import Point, DirectionOptions
 from trackable_object import TrackableObject
 from utils.constants import *
 
@@ -227,6 +227,9 @@ def main():
         # Resize the frame for faster processing
         frame = imutils.resize(frame, width=320)
         
+        # Grab the frame dimensions
+        (H, W) = frame.shape[:2]
+        
         # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
@@ -247,8 +250,7 @@ def main():
             status = "Detecting"
             trackers = []
             
-            # Grab the frame dimensions and convert the frame to a blob
-            (H, W) = frame.shape[:2]
+            # Convert the frame to a blob
             blob = cv2.dnn.blobFromImage(frame, 0.007843, (W, H), 127.5)
             
             # Pass the blob through the network and obtain the detections
@@ -342,12 +344,23 @@ def main():
         # centroids with (2) the newly computed object centroids
         objects, intersections_list = centroid_tracker.update(rects, trackable_objects)
         
-        for (object_id, intersections_count) in intersections_list:
-            print('(object_id, intersections_count)', (object_id, intersections_count))
+        for (object_id, intersections_count, direction) in intersections_list:
+            print('(object_id, intersections_count, direction)', (object_id, intersections_count, direction))
+            if direction is None:
+                continue
             if intersections_count % 2 != 0:
                 total_count += 1
                 total_count_ids_list.append(object_id)
                 print('Counted: ', object_id)
+                
+                if direction == DirectionOptions.UP:
+                    print('UP | object_id: ', object_id)
+                    total_up += 1
+                    total_up_ids_list.append(object_id)
+                else:
+                    print('DOWN | object_id: ', object_id)
+                    total_down += 1
+                    total_down_ids_list.append(object_id)
         
         # Loop over the tracked objects
         # objects.items() = iterable views on associations
@@ -386,7 +399,7 @@ def main():
             if to is None:
                 to = TrackableObject(object_id, (c_x, c_y))
             
-            # Otherwise, there is a trackable object so we can utilize it
+            # Otherwise, there is a trackable object, so we can utilize it
             # to determine direction
             else:
                 # The difference between the y-coordinate of the *current*
@@ -394,27 +407,25 @@ def main():
                 # us in which direction the object is moving (negative for
                 # 'up' and positive for 'down')
                 y = [c.y for c in to.centroids]
-                direction = c_y - np.mean(y)
+                pre_direction = c_y - np.mean(y)
                 to.centroids.append(Point(c_x, c_y))
                 
-                # Check to see if the object has been pre-counted or not
+                # Check whether the object has been pre-counted or not.
+                # Pre-counting is useful for the centroid tracker to avoid setting the same object ID if two objects
+                # appear next to each other at the same time. Therefore, if the object was already pre-counted, its id
+                # cannot be reassigned and the centroid tracker recognizes the trackable object as another object with
+                # a new ID.
                 if not to.pre_counted:
                     # If the direction is negative (indicating the object
                     # is moving up) AND the centroid is above the center
                     # line, count the object
-                    if direction < 0 and c_y < H // 2:
-                        print('UP | object_id: ', object_id, '| (c_x, c_y):', (c_x, c_y))
-                        total_up += 1
-                        total_up_ids_list.append(object_id)
+                    if pre_direction < 0 and c_y < H // 2:
                         to.pre_counted = True
                     
                     # If the direction is positive (indicating the object
                     # is moving down) AND the centroid is below the
                     # center line, count the object
-                    elif direction > 0 and c_y > H // 2:
-                        print('DOWN | object_id: ', object_id, '| (c_x, c_y):', (c_x, c_y))
-                        total_down += 1
-                        total_down_ids_list.append(object_id)
+                    elif pre_direction > 0 and c_y > H // 2:
                         to.pre_counted = True
             
             # Store the trackable object in our dictionary

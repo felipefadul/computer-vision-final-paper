@@ -48,17 +48,15 @@ class CentroidTracker:
     
     def count_intersections(self, trackable_objects, object_id):
         to = trackable_objects.get(object_id, None)
-        intersections_count, intersection_points = self.polylines_intersections_counter.count_intersections(
+        intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.polylines_intersections_counter.count_intersections(
             self.default_line, to.centroids)
-        to.intersections_count = intersections_count
         if OBJECT_ID_TO_DEBUG == object_id:
             print('Test deregister - object_id', object_id)
             print('Test deregister - to.object_id', to.object_id)
             print('Test deregister - to.centroids', to.centroids)
             print('Test deregister - intersections_count', intersections_count)
-            print('Test deregister - to.intersections_count', to.intersections_count)
             print('Test deregister - intersection_points', intersection_points)
-        return intersections_count
+        return intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment
     
     def update(self, rects, trackable_objects):
         intersections_list = []
@@ -74,9 +72,13 @@ class CentroidTracker:
                 # frames where a given object has been marked as
                 # missing, deregister it
                 if self.disappeared[object_id] > self.max_disappeared:
-                    intersections_count = self.count_intersections(trackable_objects, object_id)
+                    intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.count_intersections(
+                        trackable_objects, object_id)
+                    direction = self.polylines_intersections_counter.get_intersection_direction(intersection_points,
+                                                                                                first_point_of_the_first_segment,
+                                                                                                last_point_of_the_last_segment)
                     self.deregister(object_id)
-                    intersections_list.append((object_id, intersections_count))
+                    intersections_list.append((object_id, intersections_count, direction))
             
             # Return early as there are no centroids or tracking info
             # to update
@@ -122,7 +124,7 @@ class CentroidTracker:
             # indexes based on their minimum values so that the row
             # with the smallest value as at the *front* of the index
             # list
-            rows = distance.min(axis=1).argsort()
+            rows = distance.min(axis=1, initial=None).argsort()
             
             # Next, we perform a similar process on the columns by
             # finding the smallest value in each column and then
@@ -150,8 +152,6 @@ class CentroidTracker:
                     continue
                 
                 to = trackable_objects.get(object_ids[row], None)
-                if to is None:
-                    self.register(input_centroids[i], input_rects[i])
                 if to is not None and not to.pre_counted:
                     # Otherwise, grab the object ID for the current row,
                     # set its new centroid, and reset the disappeared
@@ -187,9 +187,13 @@ class CentroidTracker:
                     # frames the object has been marked "disappeared"
                     # for warrants deregistering the object
                     if self.disappeared[object_id] > self.max_disappeared:
-                        intersections_count = self.count_intersections(trackable_objects, object_id)
+                        intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.count_intersections(
+                            trackable_objects, object_id)
+                        direction = self.polylines_intersections_counter.get_intersection_direction(intersection_points,
+                                                                                                    first_point_of_the_first_segment,
+                                                                                                    last_point_of_the_last_segment)
                         self.deregister(object_id)
-                        intersections_list.append((object_id, intersections_count))
+                        intersections_list.append((object_id, intersections_count, direction))
             
             # Otherwise, if the number of input centroids is greater
             # than the number of existing object centroids we need to

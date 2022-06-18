@@ -11,5 +11,3 @@ class TrackableObject:
         # Initialize a boolean used to indicate if the object has
         # already been pre-counted or not
         self.pre_counted = False
-        
-        self.intersections_count = 0
