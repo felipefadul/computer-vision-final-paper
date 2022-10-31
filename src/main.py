@@ -13,21 +13,14 @@ from count_polylines_intersections import Point, DirectionOptions
 from src.utils.constants import *
 from trackable_object import TrackableObject
 
-protopath = os.path.join("net", "MobileNetSSD_deploy.prototxt")
-modelpath = os.path.join("net", "MobileNetSSD_deploy.caffemodel")
+onnx_model_path = os.path.join("net", "model.onnx")
 
 # Load the serialized model from disk
-net = cv2.dnn.readNetFromCaffe(prototxt=protopath, caffeModel=modelpath)
+net = cv2.dnn.readNetFromONNX(onnx_model_path)
+print("OpenCV model was successfully read. Layer IDs: \n", net.getLayerNames())
 
-# Only enable it if you are using OpenVino environment
-# detector.setPreferableBackend(cv2.dnn.DNN_BACKEND_INFERENCE_ENGINE)
-# detector.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-
-# Initialize the list of class labels MobileNet SSD was trained to detect
-CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-           "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-           "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-           "sofa", "train", "tvmonitor"]
+# Initialize the list of class labels the model was trained to detect
+CLASSES = ["person", "helmet", "suit", "boot", "gloves", "mask", "glasses", "earplug"]
 
 pt1 = Point(10, 40)
 pt2 = Point(40, 120)
@@ -151,7 +144,7 @@ def show_info(info, frame):
     for (i, (key, value)) in enumerate(info):
         text = "{}: {}".format(key, value)
         cv2.putText(frame, text, (10, frame_height - ((i * 20) + 20) - 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, BLUE, 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, YELLOW, 2)
 
 
 def show_fps(fps_start_time, fps_end_time, total_frames, frame):
@@ -168,7 +161,7 @@ def show_fps(fps_start_time, fps_end_time, total_frames, frame):
 
 def show_people_count(count, count_type, position, frame):
     count_txt = count_type + ": {}".format(count)
-    cv2.putText(frame, count_txt, position, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, BLUE, 2)
+    cv2.putText(frame, count_txt, position, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, YELLOW, 2)
 
 
 def main():
@@ -224,13 +217,23 @@ def main():
             break
         
         # Resize the frame for faster processing
-        frame = imutils.resize(frame, width=320)
+        # frame = imutils.resize(frame, width=320)
+        # frame = imutils.resize(frame, width=640)
+        frame = cv2.resize(frame, (640, 640))
         
         # Grab the frame dimensions
         (H, W) = frame.shape[:2]
+        if total_frames == 0:
+            print('frame.shape (H, W)', (H, W))
+        
+        # Resizing factor
+        # x_factor = W / INPUT_WIDTH
+        # y_factor = H / INPUT_HEIGHT
+        x_factor = 1
+        y_factor = 1
         
         # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
         # Initialize the current status along with our list of bounding
         # box rectangles returned by either (1) our object detector or
@@ -244,7 +247,6 @@ def main():
         # Check to see if we should run a more computationally expensive
         # object detection method to aid our tracker
         if len(trackers) == 0 or total_frames % KEYFRAME_INTERVAL == 0:
-            
             # Set the status and initialize our new set of object trackers
             status = "Detecting"
             trackers = []
@@ -259,19 +261,21 @@ def main():
             person_detections = net.forward()
             
             # Loop over the detections
-            for i in np.arange(0, person_detections.shape[2]):
+            for detection in person_detections[0, :, :]:
                 # Extract the confidence (i.e., probability) associated
                 # with the prediction
-                confidence = person_detections[0, 0, i, 2]
+                confidence = detection[4]
                 
                 # Filter out weak detections by requiring a minimum
                 # confidence
                 if confidence > MINIMUM_CONFIDENCE:
                     # Extract the index of the class label from the
                     # detections list
-                    class_label_index = int(person_detections[0, 0, i, 1])
+                    classes_scores = detection[5:]
+                    # Get the index of the class with the highest score
+                    class_label_index = np.argmax(classes_scores)
                     
-                    label = CLASSES[class_label_index]
+                    label = CLASSES[int(class_label_index)]
                     
                     # If the class label is not a person, ignore it
                     if label != "person":
@@ -279,25 +283,45 @@ def main():
                     
                     # Compute the (x, y)-coordinates of the bounding box
                     # for the object
-                    person_box = person_detections[0, 0, i, 3:7] * np.array([W, H, W, H])
+                    # person_box = person_detections[0, 0, i, 3:7] * np.array([W, H, W, H])
+                    # print('Before: detection[0:4]', detection[0:4])
+                    # person_box = detection[0:4] * np.array([W, H, W, H])
+                    person_box = detection[0:4]
                     (start_x, start_y, end_x, end_y) = person_box.astype("int")
+                    # print('Before: (start_x, start_y, end_x, end_y)', (start_x, start_y, end_x, end_y))
                     
                     # Construct a dlib rectangle object from the bounding
                     # box coordinates and then start the dlib correlation tracker
                     tracker = dlib.correlation_tracker()
-                    rect = dlib.rectangle(start_x, start_y, end_x, end_y)
-                    tracker.start_track(rgb, rect)
+                    
+                    left = int((start_x - end_x / 2) * x_factor)
+                    top = int((start_y - end_y / 2) * y_factor)
+                    width = int((end_x * x_factor))
+                    height = int((end_y * y_factor))
+                    
+                    start_x = left
+                    start_y = top
+                    end_x = width
+                    end_y = height
+                    
+                    # print('After: (start_x, start_y, end_x, end_y)', (start_x, start_y, end_x, end_y))
+                    
+                    rect = dlib.rectangle(start_x, start_y, start_x + end_x, start_y + end_y)
+                    tracker.start_track(rgb_frame, rect)
                     
                     # Update our set of trackers and corresponding class
                     # labels
                     labels.append(label)
                     trackers.append(tracker)
                     
-                    rects.append((start_x, start_y, end_x, end_y))
+                    rects.append((start_x, start_y, start_x + end_x, start_y + end_y))
+                    # bounding_boxes = np.array(rects)
+                    # bounding_boxes = bounding_boxes.astype(int)
+                    # rects = non_max_suppression_fast(bounding_boxes, 0.45)
                     
                     if not SILENT_MODE and DEBUG_MODE:
                         # Draw the bounding box and text for the object
-                        cv2.rectangle(frame, (start_x, start_y), (start_x + end_x, start_y + end_y), GREEN, 2)
+                        # cv2.rectangle(frame, (start_x, start_y), (start_x + end_x, start_y + end_y), GREEN, 2)
                         if SHOW_CONFIDENCE:
                             cv2.putText(frame, str(confidence), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
                                         GREEN, 2)
@@ -313,7 +337,7 @@ def main():
                 status = "Tracking"
                 
                 # Update the tracker and grab the position of the tracked object
-                tracker.update(rgb)
+                tracker.update(rgb_frame)
                 tracker_position = tracker.get_position()
                 
                 # Unpack the position object
@@ -325,10 +349,10 @@ def main():
                 # Add the bounding box coordinates to the rectangles list
                 rects.append((start_x, start_y, end_x, end_y))
                 
-                if not SILENT_MODE and DEBUG_MODE:
-                    # Draw the bounding box from the correlation object tracker
-                    cv2.rectangle(frame, (start_x, start_y), (end_x, end_y),
-                                  RED, 2)
+                # if not SILENT_MODE and DEBUG_MODE:
+                # Draw the bounding box from the correlation object tracker
+                # cv2.rectangle(frame, (start_x, start_y), (end_x, end_y),
+                #               RED, 2)
         
         if not SILENT_MODE:
             # Draw a yellow polyline in the center of the frame -- once an
@@ -339,6 +363,9 @@ def main():
         bounding_boxes = np.array(rects)
         bounding_boxes = bounding_boxes.astype(int)
         rects = non_max_suppression_fast(bounding_boxes, 0.3)
+        
+        for rect in rects:
+            cv2.rectangle(frame, (rect[0], rect[1]), (rect[2], rect[3]), GREEN, 2)
         
         # Use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
