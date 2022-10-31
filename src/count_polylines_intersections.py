@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 
 from src.point import Point
+from src.utils.constants import *
 
 # A Python3 program to find if 2 given line segments intersect or not
 
@@ -218,9 +219,9 @@ if __name__ == "__main__":
         h, w = 700, 700
         img = np.zeros((h, w, 3), np.uint8)
         
-        draw_polyline(first_polyline, (255, 0, 0), img)
+        draw_polyline(first_polyline, BLUE, img)
         print('First polyline: ', first_polyline)
-        draw_polyline(second_polyline, (0, 255, 255), img)
+        draw_polyline(second_polyline, YELLOW, img)
         print('Second polyline: ', second_polyline)
         
         polylines_intersections_counter = PolylinesIntersectionsCounter()
@@ -236,8 +237,8 @@ if __name__ == "__main__":
                                                                                last_point_of_the_last_segment)
         print('Direction: ', direction)
         
-        draw_points(intersection_points, (0, 0, 255), img)
-        # draw_points(first_polyline, (0, 255, 0), img)
+        draw_points(intersection_points, RED, img)
+        # draw_points(first_polyline, GREEN, img)
         # draw_points(second_polyline, (255, 255, 0), img)
         
         cv2.imshow("image", img)

@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial import distance as dist
 
 from count_polylines_intersections import PolylinesIntersectionsCounter
-from utils.constants import OBJECT_ID_TO_DEBUG
+from src.utils.constants import OBJECT_ID_TO_DEBUG
 
 
 class CentroidTracker:

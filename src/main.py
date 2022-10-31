@@ -5,14 +5,13 @@ from collections import defaultdict
 
 import cv2
 import dlib
-import imutils
 import numpy as np
 from imutils.video import FPS
 
 from centroid_tracker import CentroidTracker
 from count_polylines_intersections import Point, DirectionOptions
+from src.utils.constants import *
 from trackable_object import TrackableObject
-from utils.constants import *
 
 protopath = os.path.join("net", "MobileNetSSD_deploy.prototxt")
 modelpath = os.path.join("net", "MobileNetSSD_deploy.caffemodel")
@@ -110,14 +109,14 @@ def draw_circle_with_id(to, object_id, bounding_box, c_x, c_y, frame):
         # object on the output frame
         text = "NOT COUNTED ID {}".format(object_id)
         cv2.putText(frame, text, (bounding_box[0] - 10, bounding_box[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-        cv2.circle(frame, (c_x, c_y), 4, (255, 0, 0), -1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, BLUE, 2)
+        cv2.circle(frame, (c_x, c_y), 4, BLUE, -1)
     
     if not to.pre_counted and not DEBUG_MODE:
         text = "ID {}".format(object_id)
         cv2.putText(frame, text, (c_x - 10, c_y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-        cv2.circle(frame, (c_x, c_y), 4, (255, 0, 0), -1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, BLUE, 2)
+        cv2.circle(frame, (c_x, c_y), 4, BLUE, -1)
         if object_id == OBJECT_ID_TO_DEBUG:
             print(text, '| Counted =', to.pre_counted, ' | Centroids (c_x, c_y):', (c_x, c_y))
     
@@ -126,14 +125,14 @@ def draw_circle_with_id(to, object_id, bounding_box, c_x, c_y, frame):
         # object on the output frame
         text = "COUNTED ID {}".format(object_id)
         cv2.putText(frame, text, (bounding_box[0] - 10, bounding_box[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        cv2.circle(frame, (c_x, c_y), 4, (0, 255, 255), -1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, YELLOW, 2)
+        cv2.circle(frame, (c_x, c_y), 4, YELLOW, -1)
     
     if to.pre_counted and not DEBUG_MODE:
         text = "ID {}".format(object_id)
         cv2.putText(frame, text, (c_x - 10, c_y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        cv2.circle(frame, (c_x, c_y), 4, (0, 255, 255), -1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, YELLOW, 2)
+        cv2.circle(frame, (c_x, c_y), 4, YELLOW, -1)
         if object_id == OBJECT_ID_TO_DEBUG:
             print(text, '| Counted =', to.pre_counted, ' | Centroids (c_x, c_y):', (c_x, c_y))
 
@@ -152,7 +151,7 @@ def show_info(info, frame):
     for (i, (key, value)) in enumerate(info):
         text = "{}: {}".format(key, value)
         cv2.putText(frame, text, (10, frame_height - ((i * 20) + 20) - 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, BLUE, 2)
 
 
 def show_fps(fps_start_time, fps_end_time, total_frames, frame):
@@ -164,12 +163,12 @@ def show_fps(fps_start_time, fps_end_time, total_frames, frame):
     
     fps_text = "FPS: {:.2f}".format(fps)
     
-    cv2.putText(frame, fps_text, (5, 30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 2)
+    cv2.putText(frame, fps_text, (5, 30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, GREEN, 2)
 
 
 def show_people_count(count, count_type, position, frame):
     count_txt = count_type + ": {}".format(count)
-    cv2.putText(frame, count_txt, position, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 0, 0), 2)
+    cv2.putText(frame, count_txt, position, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, BLUE, 2)
 
 
 def main():
@@ -251,7 +250,8 @@ def main():
             trackers = []
             
             # Convert the frame to a blob
-            blob = cv2.dnn.blobFromImage(frame, 0.007843, (W, H), 127.5)
+            blob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (INPUT_WIDTH, INPUT_HEIGHT), (0, 0, 0), swapRB=True,
+                                         crop=False)
             
             # Pass the blob through the network and obtain the detections
             # and predictions
@@ -297,10 +297,10 @@ def main():
                     
                     if not SILENT_MODE and DEBUG_MODE:
                         # Draw the bounding box and text for the object
-                        cv2.rectangle(frame, (start_x, start_y), (end_x, end_y), (0, 255, 0), 2)
+                        cv2.rectangle(frame, (start_x, start_y), (start_x + end_x, start_y + end_y), GREEN, 2)
                         if SHOW_CONFIDENCE:
                             cv2.putText(frame, str(confidence), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
-                                        (0, 255, 0), 2)
+                                        GREEN, 2)
         
         # Otherwise, we've already performed detection so let's track multiple objects
         # We should utilize our object *trackers* rather than
@@ -328,13 +328,13 @@ def main():
                 if not SILENT_MODE and DEBUG_MODE:
                     # Draw the bounding box from the correlation object tracker
                     cv2.rectangle(frame, (start_x, start_y), (end_x, end_y),
-                                  (0, 0, 255), 2)
+                                  RED, 2)
         
         if not SILENT_MODE:
             # Draw a yellow polyline in the center of the frame -- once an
             # object crosses this polyline we will determine whether it was
             # moving 'up' or 'down'
-            cv2.polylines(frame, np.int32([default_line_points_list]), False, (0, 255, 255), 2)
+            cv2.polylines(frame, np.int32([default_line_points_list]), False, YELLOW, 2)
         
         bounding_boxes = np.array(rects)
         bounding_boxes = bounding_boxes.astype(int)
@@ -380,16 +380,16 @@ def main():
                 object_ids_list.append(object_id)
                 start_point = (c_x, c_y)
                 end_point = (c_x, c_y)
-                cv2.circle(frame, start_point, 4, (0, 255, 0), -1)
-                cv2.line(frame, start_point, end_point, (0, 255, 0), 2)
+                cv2.circle(frame, start_point, 4, RED, -1)
+                cv2.line(frame, start_point, end_point, RED, 2)
             else:
                 length = len(centroid_dict[object_id])
                 for point in range(length):
                     if not point + 1 == length:
                         start_point = (centroid_dict[object_id][point][0], centroid_dict[object_id][point][1])
                         end_point = (centroid_dict[object_id][point + 1][0], centroid_dict[object_id][point + 1][1])
-                        cv2.circle(frame, (c_x, c_y), 4, (0, 0, 255), -1)
-                        cv2.line(frame, start_point, end_point, (0, 0, 255), 2)
+                        cv2.circle(frame, (c_x, c_y), 4, RED, -1)
+                        cv2.line(frame, start_point, end_point, RED, 2)
             
             # Check to see if a trackable object exists for the current
             # object ID
