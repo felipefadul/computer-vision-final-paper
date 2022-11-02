@@ -22,14 +22,6 @@ print("OpenCV model was successfully read. Layer IDs: \n", net.getLayerNames())
 # Initialize the list of class labels the model was trained to detect
 CLASSES = ["person", "helmet", "suit", "boot", "gloves", "mask", "glasses", "earplug"]
 
-pt1 = Point(10, 40)
-pt2 = Point(40, 120)
-pt3 = Point(280, 120)
-pt4 = Point(310, 40)
-default_line = [pt1, pt2, pt3, pt4]
-
-centroid_tracker = CentroidTracker(default_line)
-
 
 def non_max_suppression_fast(boxes, overlap_threshold):
     try:
@@ -164,6 +156,15 @@ def show_people_count(count, count_type, position, frame):
     cv2.putText(frame, count_txt, position, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, YELLOW, 2)
 
 
+def get_default_line(width, height):
+    point_1 = Point(0.05 * width, 0.2 * height)
+    point_2 = Point(0.15 * width, height // 2)
+    point_3 = Point(0.85 * width, height // 2)
+    point_4 = Point(0.95 * width, 0.2 * height)
+    default_line = [point_1, point_2, point_3, point_4]
+    return default_line
+
+
 def main():
     cap = cv2.VideoCapture('../videos/ceiling_camera.mp4')
     
@@ -195,6 +196,9 @@ def main():
     centroid_dict = defaultdict(list)
     object_ids_list = []
     
+    # Initialize the default line and centroid tracker
+    default_line = []
+    centroid_tracker = CentroidTracker(default_line)
     default_line_points_list = convert_polyline_to_array(default_line)
     
     while True:
@@ -222,13 +226,16 @@ def main():
         frame = cv2.resize(frame, (640, 640))
         
         # Grab the frame dimensions
-        (H, W) = frame.shape[:2]
+        (frame_height, frame_width) = frame.shape[:2]
         if total_frames == 0:
-            print('frame.shape (H, W)', (H, W))
+            print('frame.shape (frame_height, frame_width)', (frame_height, frame_width))
+            default_line = get_default_line(frame_width, frame_height)
+            centroid_tracker = CentroidTracker(default_line)
+            default_line_points_list = convert_polyline_to_array(default_line)
         
         # Resizing factor
-        # x_factor = W / INPUT_WIDTH
-        # y_factor = H / INPUT_HEIGHT
+        # x_factor = frame_width / INPUT_WIDTH
+        # y_factor = frame_height / INPUT_HEIGHT
         x_factor = 1
         y_factor = 1
         
@@ -283,9 +290,9 @@ def main():
                     
                     # Compute the (x, y)-coordinates of the bounding box
                     # for the object
-                    # person_box = person_detections[0, 0, i, 3:7] * np.array([W, H, W, H])
+                    # person_box = person_detections[0, 0, i, 3:7] * np.array([frame_width, frame_height, frame_width, frame_height])
                     # print('Before: detection[0:4]', detection[0:4])
-                    # person_box = detection[0:4] * np.array([W, H, W, H])
+                    # person_box = detection[0:4] * np.array([frame_width, frame_height, frame_width, frame_height])
                     person_box = detection[0:4]
                     (start_x, start_y, end_x, end_y) = person_box.astype("int")
                     # print('Before: (start_x, start_y, end_x, end_y)', (start_x, start_y, end_x, end_y))
@@ -446,13 +453,13 @@ def main():
                     # If the direction is negative (indicating the object
                     # is moving up) AND the centroid is above the center
                     # line, count the object
-                    if pre_direction < 0 and c_y < H // 2:
+                    if pre_direction < 0 and c_y < frame_height // 2:
                         to.pre_counted = True
                     
                     # If the direction is positive (indicating the object
                     # is moving down) AND the centroid is below the
                     # center line, count the object
-                    elif pre_direction > 0 and c_y > H // 2:
+                    elif pre_direction > 0 and c_y > frame_height // 2:
                         to.pre_counted = True
             
             # Store the trackable object in our dictionary
