@@ -5,6 +5,7 @@ from collections import defaultdict
 
 import cv2
 import dlib
+import imutils
 import numpy as np
 from imutils.video import FPS
 
@@ -165,6 +166,16 @@ def get_default_line(width, height):
     return default_line
 
 
+def get_centroid_from_bounding_box(bounding_box):
+    start_x, start_y, end_x, end_y = bounding_box.astype("int")
+    
+    center_x = (start_x + end_x) // 2
+    center_y = (start_y + end_y) // 2
+    centroid = (center_x, center_y)
+    
+    return centroid
+
+
 def main():
     cap = cv2.VideoCapture('../videos/ceiling_camera.mp4')
     
@@ -221,9 +232,7 @@ def main():
             break
         
         # Resize the frame for faster processing
-        # frame = imutils.resize(frame, width=320)
-        # frame = imutils.resize(frame, width=640)
-        frame = cv2.resize(frame, (640, 640))
+        frame = imutils.resize(frame, width=320)
         
         # Grab the frame dimensions
         (frame_height, frame_width) = frame.shape[:2]
@@ -234,10 +243,8 @@ def main():
             default_line_points_list = convert_polyline_to_array(default_line)
         
         # Resizing factor
-        # x_factor = frame_width / INPUT_WIDTH
-        # y_factor = frame_height / INPUT_HEIGHT
-        x_factor = 1
-        y_factor = 1
+        x_factor = frame_width / INPUT_WIDTH
+        y_factor = frame_height / INPUT_HEIGHT
         
         # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -290,30 +297,24 @@ def main():
                     
                     # Compute the (x, y)-coordinates of the bounding box
                     # for the object
-                    # person_box = person_detections[0, 0, i, 3:7] * np.array([frame_width, frame_height, frame_width, frame_height])
-                    # print('Before: detection[0:4]', detection[0:4])
-                    # person_box = detection[0:4] * np.array([frame_width, frame_height, frame_width, frame_height])
                     person_box = detection[0:4]
-                    (start_x, start_y, end_x, end_y) = person_box.astype("int")
-                    # print('Before: (start_x, start_y, end_x, end_y)', (start_x, start_y, end_x, end_y))
+                    (center_x, center_y, box_width, box_height) = person_box.astype("int")
                     
                     # Construct a dlib rectangle object from the bounding
                     # box coordinates and then start the dlib correlation tracker
                     tracker = dlib.correlation_tracker()
                     
-                    left = int((start_x - end_x / 2) * x_factor)
-                    top = int((start_y - end_y / 2) * y_factor)
-                    width = int((end_x * x_factor))
-                    height = int((end_y * y_factor))
+                    left = int((center_x - box_width / 2) * x_factor)
+                    top = int((center_y - box_height / 2) * y_factor)
+                    width = int((box_width * x_factor))
+                    height = int((box_height * y_factor))
                     
                     start_x = left
                     start_y = top
-                    end_x = width
-                    end_y = height
+                    end_x = left + width
+                    end_y = top + height
                     
-                    # print('After: (start_x, start_y, end_x, end_y)', (start_x, start_y, end_x, end_y))
-                    
-                    rect = dlib.rectangle(start_x, start_y, start_x + end_x, start_y + end_y)
+                    rect = dlib.rectangle(start_x, start_y, end_x, end_y)
                     tracker.start_track(rgb_frame, rect)
                     
                     # Update our set of trackers and corresponding class
@@ -321,17 +322,11 @@ def main():
                     labels.append(label)
                     trackers.append(tracker)
                     
-                    rects.append((start_x, start_y, start_x + end_x, start_y + end_y))
-                    # bounding_boxes = np.array(rects)
-                    # bounding_boxes = bounding_boxes.astype(int)
-                    # rects = non_max_suppression_fast(bounding_boxes, 0.45)
+                    rects.append((start_x, start_y, end_x, end_y))
                     
-                    if not SILENT_MODE and DEBUG_MODE:
-                        # Draw the bounding box and text for the object
-                        # cv2.rectangle(frame, (start_x, start_y), (start_x + end_x, start_y + end_y), GREEN, 2)
-                        if SHOW_CONFIDENCE:
-                            cv2.putText(frame, str(confidence), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
-                                        GREEN, 2)
+                    if not SILENT_MODE and DEBUG_MODE and SHOW_CONFIDENCE:
+                        cv2.putText(frame, str(confidence), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+                                    GREEN, 2)
         
         # Otherwise, we've already performed detection so let's track multiple objects
         # We should utilize our object *trackers* rather than
@@ -355,11 +350,6 @@ def main():
                 
                 # Add the bounding box coordinates to the rectangles list
                 rects.append((start_x, start_y, end_x, end_y))
-                
-                # if not SILENT_MODE and DEBUG_MODE:
-                # Draw the bounding box from the correlation object tracker
-                # cv2.rectangle(frame, (start_x, start_y), (end_x, end_y),
-                #               RED, 2)
         
         if not SILENT_MODE:
             # Draw a yellow polyline in the center of the frame -- once an
@@ -371,8 +361,9 @@ def main():
         bounding_boxes = bounding_boxes.astype(int)
         rects = non_max_suppression_fast(bounding_boxes, 0.3)
         
-        for rect in rects:
-            cv2.rectangle(frame, (rect[0], rect[1]), (rect[2], rect[3]), GREEN, 2)
+        if not SILENT_MODE and DEBUG_MODE:
+            for rect in rects:
+                cv2.rectangle(frame, (rect[0], rect[1]), (rect[2], rect[3]), GREEN, 2)
         
         # Use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
