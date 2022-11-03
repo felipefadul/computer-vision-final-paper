@@ -390,21 +390,15 @@ def main():
         # Loop over the tracked objects
         # objects.items() = iterable views on associations
         for (object_id, bounding_box) in objects.items():
-            x1, y1, x2, y2 = bounding_box
-            x1 = int(x1)
-            y1 = int(y1)
-            x2 = int(x2)
-            y2 = int(y2)
+            centroid = get_centroid_from_bounding_box(bounding_box)
+            center_x, center_y = centroid[0], centroid[1]
             
-            c_x = int((x1 + x2) / 2.0)
-            c_y = int((y1 + y2) / 2.0)
-            
-            centroid_dict[object_id].append((c_x, c_y))
+            centroid_dict[object_id].append(centroid)
             
             if object_id not in object_ids_list:
                 object_ids_list.append(object_id)
-                start_point = (c_x, c_y)
-                end_point = (c_x, c_y)
+                start_point = centroid
+                end_point = centroid
                 cv2.circle(frame, start_point, 4, RED, -1)
                 cv2.line(frame, start_point, end_point, RED, 2)
             else:
@@ -413,7 +407,7 @@ def main():
                     if not point + 1 == length:
                         start_point = (centroid_dict[object_id][point][0], centroid_dict[object_id][point][1])
                         end_point = (centroid_dict[object_id][point + 1][0], centroid_dict[object_id][point + 1][1])
-                        cv2.circle(frame, (c_x, c_y), 4, RED, -1)
+                        cv2.circle(frame, centroid, 4, RED, -1)
                         cv2.line(frame, start_point, end_point, RED, 2)
             
             # Check to see if a trackable object exists for the current
@@ -422,7 +416,7 @@ def main():
             
             # If there is no existing trackable object, create one
             if to is None:
-                to = TrackableObject(object_id, (c_x, c_y))
+                to = TrackableObject(object_id, centroid)
             
             # Otherwise, there is a trackable object, so we can utilize it
             # to determine direction
@@ -432,8 +426,8 @@ def main():
                 # us in which direction the object is moving (negative for
                 # 'up' and positive for 'down')
                 y = [c.y for c in to.centroids]
-                pre_direction = c_y - np.mean(y)
-                to.centroids.append(Point(c_x, c_y))
+                pre_direction = center_y - np.mean(y)
+                to.centroids.append(Point(center_x, center_y))
                 
                 # Check whether the object has been pre-counted or not.
                 # Pre-counting is useful for the centroid tracker to avoid setting the same object ID if two objects
@@ -444,20 +438,20 @@ def main():
                     # If the direction is negative (indicating the object
                     # is moving up) AND the centroid is above the center
                     # line, count the object
-                    if pre_direction < 0 and c_y < frame_height // 2:
+                    if pre_direction < 0 and center_y < frame_height // 2:
                         to.pre_counted = True
                     
                     # If the direction is positive (indicating the object
                     # is moving down) AND the centroid is below the
                     # center line, count the object
-                    elif pre_direction > 0 and c_y > frame_height // 2:
+                    elif pre_direction > 0 and center_y > frame_height // 2:
                         to.pre_counted = True
             
             # Store the trackable object in our dictionary
             trackable_objects[object_id] = to
             
             if not SILENT_MODE:
-                draw_circle_with_id(to, object_id, bounding_box, c_x, c_y, frame)
+                draw_circle_with_id(to, object_id, bounding_box, center_x, center_y, frame)
         
         # Construct a tuple of information we will be displaying on the
         # frame
