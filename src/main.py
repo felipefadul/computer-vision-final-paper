@@ -5,6 +5,7 @@ from collections import defaultdict
 
 import cv2
 import dlib
+import imutils
 import numpy as np
 from imutils.video import FPS
 
@@ -221,9 +222,7 @@ def main():
             break
         
         # Resize the frame for faster processing
-        # frame = imutils.resize(frame, width=320)
-        # frame = imutils.resize(frame, width=640)
-        frame = cv2.resize(frame, (640, 640))
+        frame = imutils.resize(frame, width=320)
         
         # Grab the frame dimensions
         (frame_height, frame_width) = frame.shape[:2]
@@ -234,10 +233,8 @@ def main():
             default_line_points_list = convert_polyline_to_array(default_line)
         
         # Resizing factor
-        # x_factor = frame_width / INPUT_WIDTH
-        # y_factor = frame_height / INPUT_HEIGHT
-        x_factor = 1
-        y_factor = 1
+        x_factor = frame_width / INPUT_WIDTH
+        y_factor = frame_height / INPUT_HEIGHT
         
         # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -290,21 +287,17 @@ def main():
                     
                     # Compute the (x, y)-coordinates of the bounding box
                     # for the object
-                    # person_box = person_detections[0, 0, i, 3:7] * np.array([frame_width, frame_height, frame_width, frame_height])
-                    # print('Before: detection[0:4]', detection[0:4])
-                    # person_box = detection[0:4] * np.array([frame_width, frame_height, frame_width, frame_height])
                     person_box = detection[0:4]
-                    (start_x, start_y, end_x, end_y) = person_box.astype("int")
-                    # print('Before: (start_x, start_y, end_x, end_y)', (start_x, start_y, end_x, end_y))
+                    (center_x, center_y, box_width, box_height) = person_box.astype("int")
                     
                     # Construct a dlib rectangle object from the bounding
                     # box coordinates and then start the dlib correlation tracker
                     tracker = dlib.correlation_tracker()
                     
-                    left = int((start_x - end_x / 2) * x_factor)
-                    top = int((start_y - end_y / 2) * y_factor)
-                    width = int((end_x * x_factor))
-                    height = int((end_y * y_factor))
+                    left = int((center_x - box_width / 2) * x_factor)
+                    top = int((center_y - box_height / 2) * y_factor)
+                    width = int((box_width * x_factor))
+                    height = int((box_height * y_factor))
                     
                     start_x = left
                     start_y = top
