@@ -176,6 +176,23 @@ def get_centroid_from_bounding_box(bounding_box):
     return centroid
 
 
+def get_scaled_bounding_box(bounding_box, x_factor, y_factor):
+    (center_x, center_y, box_width, box_height) = bounding_box.astype("int")
+    
+    left = int((center_x - box_width / 2) * x_factor)
+    top = int((center_y - box_height / 2) * y_factor)
+    width = int((box_width * x_factor))
+    height = int((box_height * y_factor))
+    
+    start_x = left
+    start_y = top
+    end_x = left + width
+    end_y = top + height
+    scaled_bounding_box = (start_x, start_y, end_x, end_y)
+    
+    return scaled_bounding_box
+
+
 def main():
     cap = cv2.VideoCapture('../videos/ceiling_camera.mp4')
     
@@ -242,10 +259,6 @@ def main():
             centroid_tracker = CentroidTracker(default_line)
             default_line_points_list = convert_polyline_to_array(default_line)
         
-        # Resizing factor
-        x_factor = frame_width / INPUT_WIDTH
-        y_factor = frame_height / INPUT_HEIGHT
-        
         # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
@@ -266,7 +279,8 @@ def main():
             trackers = []
             
             # Convert the frame to a blob
-            blob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (INPUT_WIDTH, INPUT_HEIGHT), (0, 0, 0), swapRB=True,
+            blob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (NETWORK_INPUT_WIDTH, NETWORK_INPUT_HEIGHT), (0, 0, 0),
+                                         swapRB=True,
                                          crop=False)
             
             # Pass the blob through the network and obtain the detections
@@ -298,23 +312,18 @@ def main():
                     # Compute the (x, y)-coordinates of the bounding box
                     # for the object
                     person_box = detection[0:4]
-                    (center_x, center_y, box_width, box_height) = person_box.astype("int")
+                    
+                    # Resizing factor
+                    x_factor = frame_width / NETWORK_INPUT_WIDTH
+                    y_factor = frame_height / NETWORK_INPUT_HEIGHT
+                    
+                    scaled_bounding_box = get_scaled_bounding_box(person_box, x_factor, y_factor)
+                    start_x, start_y, end_x, end_y = scaled_bounding_box
                     
                     # Construct a dlib rectangle object from the bounding
                     # box coordinates and then start the dlib correlation tracker
-                    tracker = dlib.correlation_tracker()
-                    
-                    left = int((center_x - box_width / 2) * x_factor)
-                    top = int((center_y - box_height / 2) * y_factor)
-                    width = int((box_width * x_factor))
-                    height = int((box_height * y_factor))
-                    
-                    start_x = left
-                    start_y = top
-                    end_x = left + width
-                    end_y = top + height
-                    
                     rect = dlib.rectangle(start_x, start_y, end_x, end_y)
+                    tracker = dlib.correlation_tracker()
                     tracker.start_track(rgb_frame, rect)
                     
                     # Update our set of trackers and corresponding class
@@ -322,7 +331,7 @@ def main():
                     labels.append(label)
                     trackers.append(tracker)
                     
-                    rects.append((start_x, start_y, end_x, end_y))
+                    rects.append(scaled_bounding_box)
                     
                     if not SILENT_MODE and DEBUG_MODE and SHOW_CONFIDENCE:
                         cv2.putText(frame, str(confidence), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
@@ -347,9 +356,10 @@ def main():
                 start_y = int(tracker_position.top())
                 end_x = int(tracker_position.right())
                 end_y = int(tracker_position.bottom())
+                bounding_box = (start_x, start_y, end_x, end_y)
                 
                 # Add the bounding box coordinates to the rectangles list
-                rects.append((start_x, start_y, end_x, end_y))
+                rects.append(bounding_box)
         
         if not SILENT_MODE:
             # Draw a yellow polyline in the center of the frame -- once an
@@ -391,7 +401,7 @@ def main():
         # objects.items() = iterable views on associations
         for (object_id, bounding_box) in objects.items():
             centroid = get_centroid_from_bounding_box(bounding_box)
-            center_x, center_y = centroid[0], centroid[1]
+            center_x, center_y = centroid
             
             centroid_dict[object_id].append(centroid)
             
