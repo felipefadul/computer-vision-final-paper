@@ -378,7 +378,7 @@ def main():
         
         bounding_boxes = np.array(rects)
         bounding_boxes = bounding_boxes.astype(int)
-        rects = non_max_suppression_fast(bounding_boxes, 0.3)
+        rects = non_max_suppression_fast(bounding_boxes, NMS_THRESHOLD)
         
         if not SILENT_MODE and DEBUG_MODE:
             for rect in rects:
