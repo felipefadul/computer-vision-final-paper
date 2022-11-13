@@ -259,9 +259,6 @@ def main():
             centroid_tracker = CentroidTracker(default_line)
             default_line_points_list = convert_polyline_to_array(default_line)
         
-        # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
         # Initialize the current status along with our list of bounding
         # box rectangles returned by either (1) our object detector or
         # (2) the correlation trackers
@@ -296,46 +293,55 @@ def main():
                 
                 # Filter out weak detections by requiring a minimum
                 # confidence
-                if confidence > MINIMUM_CONFIDENCE:
-                    # Extract the index of the class label from the
-                    # detections list
-                    classes_scores = detection[5:]
-                    # Get the index of the class with the highest score
-                    class_label_index = np.argmax(classes_scores)
-                    
-                    label = CLASSES[int(class_label_index)]
-                    
-                    # If the class label is not a person, ignore it
-                    if label != "person":
-                        continue
-                    
-                    # Compute the (x, y)-coordinates of the bounding box
-                    # for the object
-                    person_box = detection[0:4]
-                    
-                    # Resizing factor
-                    x_factor = frame_width / NETWORK_INPUT_WIDTH
-                    y_factor = frame_height / NETWORK_INPUT_HEIGHT
-                    
-                    scaled_bounding_box = get_scaled_bounding_box(person_box, x_factor, y_factor)
-                    start_x, start_y, end_x, end_y = scaled_bounding_box
-                    
-                    # Construct a dlib rectangle object from the bounding
-                    # box coordinates and then start the dlib correlation tracker
-                    rect = dlib.rectangle(start_x, start_y, end_x, end_y)
-                    tracker = dlib.correlation_tracker()
-                    tracker.start_track(rgb_frame, rect)
-                    
-                    # Update our set of trackers and corresponding class
-                    # labels
-                    labels.append(label)
-                    trackers.append(tracker)
-                    
-                    rects.append(scaled_bounding_box)
-                    
-                    if not SILENT_MODE and DEBUG_MODE and SHOW_CONFIDENCE:
-                        cv2.putText(frame, str(confidence), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
-                                    GREEN, 2)
+                if confidence < DETECTION_MINIMUM_CONFIDENCE:
+                    continue
+                
+                # Extract the index of the class label from the
+                # detections list
+                classes_scores = detection[5:]
+                # Get the index of the class with the highest score
+                class_label_index = np.argmax(classes_scores)
+                
+                # Filter out if the class score is below threshold
+                if classes_scores[class_label_index] < CLASS_SCORE_MINIMUM_CONFIDENCE:
+                    continue
+                
+                label = CLASSES[int(class_label_index)]
+                
+                # If the class label is not a person, ignore it
+                if label != "person":
+                    continue
+                
+                # Compute the (x, y)-coordinates of the bounding box
+                # for the object
+                person_box = detection[0:4]
+                
+                # Resizing factor
+                x_factor = frame_width / NETWORK_INPUT_WIDTH
+                y_factor = frame_height / NETWORK_INPUT_HEIGHT
+                
+                scaled_bounding_box = get_scaled_bounding_box(person_box, x_factor, y_factor)
+                start_x, start_y, end_x, end_y = scaled_bounding_box
+                
+                # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                
+                # Construct a dlib rectangle object from the bounding
+                # box coordinates and then start the dlib correlation tracker
+                rect = dlib.rectangle(start_x, start_y, end_x, end_y)
+                tracker = dlib.correlation_tracker()
+                tracker.start_track(rgb_frame, rect)
+                
+                # Update our set of trackers and corresponding class
+                # labels
+                labels.append(label)
+                trackers.append(tracker)
+                
+                rects.append(scaled_bounding_box)
+                
+                if not SILENT_MODE and DEBUG_MODE and SHOW_CONFIDENCE:
+                    cv2.putText(frame, str(confidence), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+                                GREEN, 2)
         
         # Otherwise, we've already performed detection so let's track multiple objects
         # We should utilize our object *trackers* rather than
@@ -346,6 +352,9 @@ def main():
                 # Set the status of our system to be 'tracking' rather
                 # than 'waiting' or 'detecting'
                 status = "Tracking"
+                
+                # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 
                 # Update the tracker and grab the position of the tracked object
                 tracker.update(rgb_frame)
