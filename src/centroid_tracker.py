@@ -4,11 +4,13 @@ import numpy as np
 from scipy.spatial import distance as dist
 
 from count_polylines_intersections import PolylinesIntersectionsCounter
-from src.utils.constants import OBJECT_ID_TO_DEBUG
+from src.utils.constants import OBJECT_ID_TO_DEBUG, CENTROID_TRACKER_MAXIMUM_DISAPPEARED, \
+    CENTROID_TRACKER_MAXIMUM_DISTANCE
 
 
 class CentroidTracker:
-    def __init__(self, default_line, max_disappeared=50, max_distance=50):
+    def __init__(self, default_line, max_disappeared=CENTROID_TRACKER_MAXIMUM_DISAPPEARED,
+                 max_distance=CENTROID_TRACKER_MAXIMUM_DISTANCE):
         # Initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object ID
         # to its centroid and number of consecutive frames it has
@@ -152,6 +154,7 @@ class CentroidTracker:
                     continue
                 
                 to = trackable_objects.get(object_ids[row], None)
+                
                 if to is not None and not to.pre_counted:
                     # Otherwise, grab the object ID for the current row,
                     # set its new centroid, and reset the disappeared

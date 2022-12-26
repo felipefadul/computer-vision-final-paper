@@ -7,6 +7,7 @@ import cv2
 import dlib
 import imutils
 import numpy as np
+import yolov5
 from imutils.video import FPS
 
 from centroid_tracker import CentroidTracker
@@ -14,55 +15,19 @@ from count_polylines_intersections import Point, DirectionOptions
 from src.utils.constants import *
 from trackable_object import TrackableObject
 
-onnx_model_path = os.path.join("net", "model.onnx")
+pt_model_path = os.path.join("net", "model.pt")
+# Load custom model
+net = yolov5.load(pt_model_path)
 
-# Load the serialized model from disk
-net = cv2.dnn.readNetFromONNX(onnx_model_path)
-print("OpenCV model was successfully read. Layer IDs: \n", net.getLayerNames())
+# Set model parameters
+net.conf = NMS_CONFIDENCE_THRESHOLD  # NMS confidence threshold
+net.iou = NMS_IOU_THRESHOLD  # NMS IoU threshold
+net.agnostic = False  # NMS class-agnostic
+net.multi_label = False  # NMS multiple labels per box
+net.max_det = 1000  # Maximum number of detections per image
 
 # Initialize the list of class labels the model was trained to detect
-CLASSES = ["person", "helmet", "suit", "boot", "gloves", "mask", "glasses", "earplug"]
-
-
-def non_max_suppression_fast(boxes, overlap_threshold):
-    try:
-        if len(boxes) == 0:
-            return []
-        
-        if boxes.dtype.kind == "i":
-            boxes = boxes.astype("float")
-        
-        pick = []
-        
-        x1 = boxes[:, 0]
-        y1 = boxes[:, 1]
-        x2 = boxes[:, 2]
-        y2 = boxes[:, 3]
-        
-        area = (x2 - x1 + 1) * (y2 - y1 + 1)
-        idxs = np.argsort(y2)
-        
-        while len(idxs) > 0:
-            last = len(idxs) - 1
-            i = idxs[last]
-            pick.append(i)
-            
-            xx1 = np.maximum(x1[i], x1[idxs[:last]])
-            yy1 = np.maximum(y1[i], y1[idxs[:last]])
-            xx2 = np.minimum(x2[i], x2[idxs[:last]])
-            yy2 = np.minimum(y2[i], y2[idxs[:last]])
-            
-            w = np.maximum(0, xx2 - xx1 + 1)
-            h = np.maximum(0, yy2 - yy1 + 1)
-            
-            overlap = (w * h) / area[idxs[:last]]
-            
-            idxs = np.delete(idxs, np.concatenate(([last],
-                                                   np.where(overlap > overlap_threshold)[0])))
-        
-        return boxes[pick].astype("int")
-    except Exception as e:
-        print("Exception occurred in non_max_suppression: {}".format(e))
+CLASSES = ["person"]
 
 
 def handle_video_options(key, cap, is_to_accelerate_video, is_to_move_forward, acceleration_frames_count):
@@ -176,23 +141,6 @@ def get_centroid_from_bounding_box(bounding_box):
     return centroid
 
 
-def get_scaled_bounding_box(bounding_box, x_factor, y_factor):
-    (center_x, center_y, box_width, box_height) = bounding_box.astype("int")
-    
-    left = int((center_x - box_width / 2) * x_factor)
-    top = int((center_y - box_height / 2) * y_factor)
-    width = int((box_width * x_factor))
-    height = int((box_height * y_factor))
-    
-    start_x = left
-    start_y = top
-    end_x = left + width
-    end_y = top + height
-    scaled_bounding_box = (start_x, start_y, end_x, end_y)
-    
-    return scaled_bounding_box
-
-
 def main():
     cap = cv2.VideoCapture('../videos/ceiling_camera.mp4')
     
@@ -275,73 +223,58 @@ def main():
             status = "Detecting"
             trackers = []
             
-            # Convert the frame to a blob
-            blob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (NETWORK_INPUT_WIDTH, NETWORK_INPUT_HEIGHT), (0, 0, 0),
-                                         swapRB=True,
-                                         crop=False)
-            
-            # Pass the blob through the network and obtain the detections
-            # and predictions
-            net.setInput(blob)
-            person_detections = net.forward()
+            # Pass the frame through the network and obtain the detections
+            person_detections = net(frame)
             
             # Loop over the detections
-            for detection in person_detections[0, :, :]:
+            for detection in person_detections.pred:
                 # Extract the confidence (i.e., probability) associated
                 # with the prediction
-                confidence = detection[4]
+                confidence = detection[:, 4]
                 
-                # Filter out weak detections by requiring a minimum
-                # confidence
-                if confidence < DETECTION_MINIMUM_CONFIDENCE:
+                # Filter out frames without detections
+                if confidence.nelement() == 0:
                     continue
                 
                 # Extract the index of the class label from the
                 # detections list
-                classes_scores = detection[5:]
-                # Get the index of the class with the highest score
-                class_label_index = np.argmax(classes_scores)
+                class_label_index = detection[:, 5]
                 
-                # Filter out if the class score is below threshold
-                if classes_scores[class_label_index] < CLASS_SCORE_MINIMUM_CONFIDENCE:
-                    continue
-                
-                label = CLASSES[int(class_label_index)]
-                
-                # If the class label is not a person, ignore it
-                if label != "person":
-                    continue
-                
-                # Compute the (x, y)-coordinates of the bounding box
-                # for the object
-                person_box = detection[0:4]
-                
-                # Resizing factor
-                x_factor = frame_width / NETWORK_INPUT_WIDTH
-                y_factor = frame_height / NETWORK_INPUT_HEIGHT
-                
-                scaled_bounding_box = get_scaled_bounding_box(person_box, x_factor, y_factor)
-                start_x, start_y, end_x, end_y = scaled_bounding_box
-                
-                # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                
-                # Construct a dlib rectangle object from the bounding
-                # box coordinates and then start the dlib correlation tracker
-                rect = dlib.rectangle(start_x, start_y, end_x, end_y)
-                tracker = dlib.correlation_tracker()
-                tracker.start_track(rgb_frame, rect)
-                
-                # Update our set of trackers and corresponding class
-                # labels
-                labels.append(label)
-                trackers.append(tracker)
-                
-                rects.append(scaled_bounding_box)
-                
-                if not SILENT_MODE and DEBUG_MODE and SHOW_CONFIDENCE:
-                    cv2.putText(frame, str(confidence), (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
-                                GREEN, 2)
+                for index in range(confidence.nelement()):
+                    label = CLASSES[int(class_label_index[index])]
+                    
+                    # If the class label is not a person, ignore it
+                    if label != "person":
+                        continue
+                    
+                    # Compute the (x, y)-coordinates of the bounding box
+                    # for the object
+                    person_box = detection[:, :4]
+                    
+                    start_x, start_y, end_x, end_y = person_box[index]
+                    start_x, start_y, end_x, end_y = int(start_x.item()), int(start_y.item()), int(end_x.item()), int(
+                        end_y.item())
+                    
+                    # Convert the frame from BGR to RGB ordering (dlib needs RGB ordering)
+                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    
+                    # Construct a dlib rectangle object from the bounding
+                    # box coordinates and then start the dlib correlation tracker
+                    rect = dlib.rectangle(start_x, start_y, end_x, end_y)
+                    tracker = dlib.correlation_tracker()
+                    tracker.start_track(rgb_frame, rect)
+                    
+                    # Update our set of trackers and corresponding class
+                    # labels
+                    labels.append(label)
+                    trackers.append(tracker)
+                    
+                    bounding_box = start_x, start_y, end_x, end_y
+                    rects.append(bounding_box)
+                    
+                    if not SILENT_MODE and DEBUG_MODE and SHOW_CONFIDENCE:
+                        cv2.putText(frame, str(round(confidence[index].item(), 2)), (start_x, start_y),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, GREEN, 2)
         
         # Otherwise, we've already performed detection so let's track multiple objects
         # We should utilize our object *trackers* rather than
@@ -377,16 +310,14 @@ def main():
             cv2.polylines(frame, np.int32([default_line_points_list]), False, YELLOW, 2)
         
         bounding_boxes = np.array(rects)
-        bounding_boxes = bounding_boxes.astype(int)
-        rects = non_max_suppression_fast(bounding_boxes, NMS_THRESHOLD)
         
         if not SILENT_MODE and DEBUG_MODE:
-            for rect in rects:
-                cv2.rectangle(frame, (rect[0], rect[1]), (rect[2], rect[3]), GREEN, 2)
+            for bounding_box in bounding_boxes:
+                cv2.rectangle(frame, (bounding_box[0], bounding_box[1]), (bounding_box[2], bounding_box[3]), GREEN, 2)
         
         # Use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
-        objects, intersections_list = centroid_tracker.update(rects, trackable_objects)
+        objects, intersections_list = centroid_tracker.update(bounding_boxes, trackable_objects)
         
         for (object_id, intersections_count, direction) in intersections_list:
             print('(object_id, intersections_count, direction)', (object_id, intersections_count, direction))
