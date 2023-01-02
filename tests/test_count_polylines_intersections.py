@@ -162,6 +162,17 @@ class CountIntersectionTest(unittest.TestCase):
     
     def test_count_intersection_17(self):
         first_polyline = self.default_line
+        second_polyline = [Point(250, 400), Point(350, 300)]
+        intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.polylines_intersections_counter.count_intersections(
+            first_polyline, second_polyline)
+        direction = self.polylines_intersections_counter.get_intersection_direction(intersection_points,
+                                                                                    first_point_of_the_first_segment,
+                                                                                    last_point_of_the_last_segment)
+        self.assertEqual(1, intersections_count, 'ERROR!')
+        self.assertEqual(None, direction, 'ERROR!')
+    
+    def test_count_intersection_18(self):
+        first_polyline = self.default_line
         second_polyline = [Point(250, 300), Point(250, 500), Point(350, 300), Point(350, 500), Point(450, 300),
                            Point(450, 500)]
         intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.polylines_intersections_counter.count_intersections(
@@ -172,7 +183,7 @@ class CountIntersectionTest(unittest.TestCase):
         self.assertEqual(5, intersections_count, 'ERROR!')
         self.assertEqual(DirectionOptions.DOWN, direction, 'ERROR!')
     
-    def test_count_intersection_18(self):
+    def test_count_intersection_19(self):
         first_polyline = self.default_line
         second_polyline = [Point(450, 500), Point(450, 300), Point(350, 500), Point(350, 300), Point(250, 500),
                            Point(250, 300)]
@@ -184,7 +195,7 @@ class CountIntersectionTest(unittest.TestCase):
         self.assertEqual(5, intersections_count, 'ERROR!')
         self.assertEqual(DirectionOptions.UP, direction, 'ERROR!')
     
-    def test_count_intersection_19(self):
+    def test_count_intersection_20(self):
         first_polyline = self.default_line
         second_polyline = [Point(250, 300), Point(250, 500), Point(350, 300), Point(350, 500), Point(450, 300)]
         intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.polylines_intersections_counter.count_intersections(
@@ -195,7 +206,7 @@ class CountIntersectionTest(unittest.TestCase):
         self.assertEqual(4, intersections_count, 'ERROR!')
         self.assertEqual(None, direction, 'ERROR!')
     
-    def test_count_intersection_20(self):
+    def test_count_intersection_21(self):
         first_polyline = self.default_line
         second_polyline = [Point(450, 500), Point(450, 300), Point(350, 500), Point(350, 300), Point(250, 500)]
         intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.polylines_intersections_counter.count_intersections(

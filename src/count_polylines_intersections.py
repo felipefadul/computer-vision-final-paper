@@ -198,19 +198,23 @@ if __name__ == "__main__":
     
     # Test 17
     # first_polyline = default_line
+    # second_polyline = [Point(250, 400), Point(350, 300)]
+    
+    # Test 18
+    # first_polyline = default_line
     # second_polyline = [Point(250, 300), Point(250, 500), Point(350, 300), Point(350, 500), Point(450, 300),
     #                    Point(450, 500)]
     
-    # Test 18
+    # Test 19
     # first_polyline = default_line
     # second_polyline = [Point(450, 500), Point(450, 300), Point(350, 500), Point(350, 300), Point(250, 500),
     #                    Point(250, 300)]
     
-    # Test 19
+    # Test 20
     # first_polyline = default_line
     # second_polyline = [Point(250, 300), Point(250, 500), Point(350, 300), Point(350, 500), Point(450, 300)]
     
-    # Test 20
+    # Test 21
     first_polyline = default_line
     second_polyline = [Point(450, 500), Point(450, 300), Point(350, 500), Point(350, 300), Point(250, 500)]
     
