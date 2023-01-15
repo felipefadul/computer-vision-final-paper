@@ -13,6 +13,7 @@ from imutils.video import FPS
 from centroid_tracker import CentroidTracker
 from count_polylines_intersections import Point, DirectionOptions
 from src.utils.constants import *
+from src.utils.helper import get_centroid_from_bounding_box
 from trackable_object import TrackableObject
 
 pt_model_path = os.path.join("net", "model.pt")
@@ -129,16 +130,6 @@ def get_default_line(width, height):
     point_4 = Point(0.95 * width, 0.2 * height)
     default_line = [point_1, point_2, point_3, point_4]
     return default_line
-
-
-def get_centroid_from_bounding_box(bounding_box):
-    start_x, start_y, end_x, end_y = bounding_box.astype("int")
-    
-    center_x = (start_x + end_x) // 2
-    center_y = (start_y + end_y) // 2
-    centroid = (center_x, center_y)
-    
-    return centroid
 
 
 def main():

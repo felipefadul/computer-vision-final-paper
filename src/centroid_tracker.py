@@ -6,6 +6,7 @@ from scipy.spatial import distance as dist
 from count_polylines_intersections import PolylinesIntersectionsCounter
 from src.utils.constants import OBJECT_ID_TO_DEBUG, CENTROID_TRACKER_MAXIMUM_DISAPPEARED, \
     CENTROID_TRACKER_MAXIMUM_DISTANCE
+from src.utils.helper import get_centroid_from_bounding_box
 
 
 class CentroidTracker:
@@ -91,11 +92,9 @@ class CentroidTracker:
         input_rects = []
         
         # Loop over the bounding box rectangles
-        for (i, (start_x, start_y, end_x, end_y)) in enumerate(rects):
-            # Use the bounding box coordinates to derive the centroid
-            c_x = int((start_x + end_x) / 2.0)
-            c_y = int((start_y + end_y) / 2.0)
-            input_centroids[i] = (c_x, c_y)
+        for (i, bounding_box) in enumerate(rects):
+            centroid = get_centroid_from_bounding_box(bounding_box)
+            input_centroids[i] = centroid
             input_rects.append(rects[i])
         
         # If we are currently not tracking any objects take the input
