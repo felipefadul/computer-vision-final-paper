@@ -55,38 +55,19 @@ def handle_video_options(key, cap, is_to_accelerate_video, is_to_move_forward, a
         cap.set(1, acceleration_frames_count[0])
 
 
-def draw_circle_with_id(to, object_id, bounding_box, c_x, c_y, frame):
-    if not to.pre_counted and DEBUG_MODE:
-        # Draw both the ID of the object and the centroid of the
-        # object on the output frame
-        text = "NOT COUNTED ID {}".format(object_id)
-        cv2.putText(frame, text, (bounding_box[0] - 10, bounding_box[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, BLUE, 2)
-        cv2.circle(frame, (c_x, c_y), 4, BLUE, -1)
+def draw_circle_with_id(object_id, bounding_box, centroid, frame):
+    text = "ID {}".format(object_id)
+    center_x, center_y = centroid
     
-    if not to.pre_counted and not DEBUG_MODE:
-        text = "ID {}".format(object_id)
-        cv2.putText(frame, text, (c_x - 10, c_y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, BLUE, 2)
-        cv2.circle(frame, (c_x, c_y), 4, BLUE, -1)
-        if object_id == OBJECT_ID_TO_DEBUG:
-            print(text, '| Counted =', to.pre_counted, ' | Centroids (c_x, c_y):', (c_x, c_y))
+    if DEBUG_MODE:
+        position = (bounding_box[0] - 10, bounding_box[1] - 10)
+    else:
+        position = (center_x - 10, center_y - 10)
     
-    if to.pre_counted and DEBUG_MODE:
-        # Draw both the ID of the object and the centroid of the
-        # object on the output frame
-        text = "COUNTED ID {}".format(object_id)
-        cv2.putText(frame, text, (bounding_box[0] - 10, bounding_box[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, YELLOW, 2)
-        cv2.circle(frame, (c_x, c_y), 4, YELLOW, -1)
-    
-    if to.pre_counted and not DEBUG_MODE:
-        text = "ID {}".format(object_id)
-        cv2.putText(frame, text, (c_x - 10, c_y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, YELLOW, 2)
-        cv2.circle(frame, (c_x, c_y), 4, YELLOW, -1)
-        if object_id == OBJECT_ID_TO_DEBUG:
-            print(text, '| Counted =', to.pre_counted, ' | Centroids (c_x, c_y):', (c_x, c_y))
+    # Draw both the ID of the object and the centroid of the
+    # object on the output frame
+    cv2.putText(frame, text, position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, BLUE, 2)
+    cv2.circle(frame, centroid, 4, BLUE, -1)
 
 
 def convert_polyline_to_array(polyline):
@@ -368,40 +349,15 @@ def main():
             if to is None:
                 to = TrackableObject(object_id, centroid)
             
-            # Otherwise, there is a trackable object, so we can utilize it
-            # to determine direction
+            # Otherwise, there is a trackable object, so we can add a new centroid to it
             else:
-                # The difference between the y-coordinate of the *current*
-                # centroid and the mean of *previous* centroids will tell
-                # us in which direction the object is moving (negative for
-                # 'up' and positive for 'down')
-                y = [c.y for c in to.centroids]
-                pre_direction = center_y - np.mean(y)
                 to.centroids.append(Point(center_x, center_y))
-                
-                # Check whether the object has been pre-counted or not.
-                # Pre-counting is useful for the centroid tracker to avoid setting the same object ID if two objects
-                # appear next to each other at the same time. Therefore, if the object was already pre-counted, its id
-                # cannot be reassigned and the centroid tracker recognizes the trackable object as another object with
-                # a new ID.
-                if not to.pre_counted:
-                    # If the direction is negative (indicating the object
-                    # is moving up) AND the centroid is above the center
-                    # line, count the object
-                    if pre_direction < 0 and center_y < frame_height // 2:
-                        to.pre_counted = True
-                    
-                    # If the direction is positive (indicating the object
-                    # is moving down) AND the centroid is below the
-                    # center line, count the object
-                    elif pre_direction > 0 and center_y > frame_height // 2:
-                        to.pre_counted = True
             
             # Store the trackable object in our dictionary
             trackable_objects[object_id] = to
             
             if not SILENT_MODE:
-                draw_circle_with_id(to, object_id, bounding_box, center_x, center_y, frame)
+                draw_circle_with_id(object_id, bounding_box, centroid, frame)
         
         # Construct a tuple of information we will be displaying on the
         # frame
