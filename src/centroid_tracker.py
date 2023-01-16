@@ -6,7 +6,7 @@ from scipy.spatial import distance as dist
 from count_polylines_intersections import PolylinesIntersectionsCounter
 from src.utils.constants import OBJECT_ID_TO_DEBUG, CENTROID_TRACKER_MAXIMUM_DISAPPEARED, \
     CENTROID_TRACKER_MAXIMUM_DISTANCE
-from src.utils.helper import get_centroid_from_bounding_box
+from src.utils.helper import get_centroid_from_bounding_box, get_rectangle_points_indicating_edge_proximity
 
 
 class CentroidTracker:
@@ -61,7 +61,7 @@ class CentroidTracker:
             print('Test deregister - intersection_points', intersection_points)
         return intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment
     
-    def update(self, rects, trackable_objects):
+    def update(self, rects, trackable_objects, frame):
         intersections_list = []
         # Check to see if the list of input bounding box rectangles
         # is empty
@@ -110,9 +110,9 @@ class CentroidTracker:
             # Grab the set of object IDs and corresponding centroids
             object_ids = list(self.objects.keys())
             object_centroids = list(self.objects.values())
-            if OBJECT_ID_TO_DEBUG in object_ids:
-                print('List of object_ids', object_ids)
-                print('List of object_centroids', object_centroids)
+            
+            last_centroid = object_centroids[-1]
+            is_last_centroid_close_to_the_edges = self.is_last_centroid_close_to_the_edges(last_centroid, frame)
             
             # Compute the distance between each pair of object
             # centroids and input centroids, respectively -- our
@@ -152,17 +152,15 @@ class CentroidTracker:
                 if distance[row, column] > self.max_distance:
                     continue
                 
-                to = trackable_objects.get(object_ids[row], None)
+                # Otherwise, grab the object ID for the current row,
+                # set its new centroid, and reset the disappeared
+                # counter
+                object_id = object_ids[row]
+                self.objects[object_id] = input_centroids[column]
+                self.bounding_box[object_id] = input_rects[column]
                 
-                if to is not None and not to.pre_counted:
-                    # Otherwise, grab the object ID for the current row,
-                    # set its new centroid, and reset the disappeared
-                    # counter
-                    object_id = object_ids[row]
-                    self.objects[object_id] = input_centroids[column]
-                    self.bounding_box[object_id] = input_rects[column]
+                if not is_last_centroid_close_to_the_edges:
                     self.disappeared[object_id] = 0
-                    
                     # Indicate that we have examined each of the row and
                     # column indexes, respectively
                     used_rows.add(row)
@@ -185,10 +183,18 @@ class CentroidTracker:
                     object_id = object_ids[row]
                     self.disappeared[object_id] += 1
                     
+                    # If the last centroid is close to the edges of the video frame, we reduce the threshold so that it
+                    # disappears faster, in order to avoid cases where a new object appears as soon as the other one
+                    # leaves the video and the algorithm thinks it's the same object that has returned
+                    if is_last_centroid_close_to_the_edges:
+                        disappeared_threshold = int(0.05 * self.max_disappeared)
+                    else:
+                        disappeared_threshold = self.max_disappeared
+                    
                     # Check to see if the number of consecutive
                     # frames the object has been marked "disappeared"
                     # for warrants deregistering the object
-                    if self.disappeared[object_id] > self.max_disappeared:
+                    if self.disappeared[object_id] > disappeared_threshold:
                         intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.count_intersections(
                             trackable_objects, object_id)
                         direction = self.polylines_intersections_counter.get_intersection_direction(intersection_points,
@@ -205,3 +211,17 @@ class CentroidTracker:
                     self.register(input_centroids[column], input_rects[column])
         
         return self.bounding_box, intersections_list
+    
+    @staticmethod
+    def is_last_centroid_close_to_the_edges(last_centroid, frame):
+        frame_width, frame_height = frame
+        
+        (rectangle_edge_proximity_start_x,
+         rectangle_edge_proximity_start_y,
+         rectangle_edge_proximity_end_x,
+         rectangle_edge_proximity_end_y) = get_rectangle_points_indicating_edge_proximity(frame_width, frame_height)
+        
+        return last_centroid[0] < rectangle_edge_proximity_start_x or \
+               last_centroid[1] < rectangle_edge_proximity_start_y or \
+               last_centroid[0] > rectangle_edge_proximity_end_x or \
+               last_centroid[1] > rectangle_edge_proximity_end_y

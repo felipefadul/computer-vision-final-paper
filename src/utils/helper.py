@@ -6,3 +6,14 @@ def get_centroid_from_bounding_box(bounding_box):
     centroid = (center_x, center_y)
     
     return centroid
+
+
+def get_rectangle_points_indicating_edge_proximity(width, height):
+    rectangle_edge_proximity_start_x = int(0.1 * width)
+    rectangle_edge_proximity_start_y = int(0.3 * height)
+    rectangle_edge_proximity_end_x = int(0.9 * width)
+    rectangle_edge_proximity_end_y = int(0.7 * height)
+    rectangle_edge_proximity = (
+        rectangle_edge_proximity_start_x, rectangle_edge_proximity_start_y,
+        rectangle_edge_proximity_end_x, rectangle_edge_proximity_end_y)
+    return rectangle_edge_proximity

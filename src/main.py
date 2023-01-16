@@ -13,7 +13,7 @@ from imutils.video import FPS
 from centroid_tracker import CentroidTracker
 from count_polylines_intersections import Point, DirectionOptions
 from src.utils.constants import *
-from src.utils.helper import get_centroid_from_bounding_box
+from src.utils.helper import get_centroid_from_bounding_box, get_rectangle_points_indicating_edge_proximity
 from trackable_object import TrackableObject
 
 pt_model_path = os.path.join("net", "model.pt")
@@ -299,6 +299,14 @@ def main():
             # object crosses this polyline we will determine whether it was
             # moving 'up' or 'down'
             cv2.polylines(frame, np.int32([default_line_points_list]), False, YELLOW, 2)
+            
+            # Draw an orange rectangle to indicate that if an object is outside of it, that object is considered to be
+            # close to the edges of the video frame. It's used for a visual representation of an improvement made in the
+            # centroid tracker.
+            rectangle_edge_proximity = get_rectangle_points_indicating_edge_proximity(frame_width, frame_height)
+            cv2.rectangle(frame, (rectangle_edge_proximity[0], rectangle_edge_proximity[1]),
+                          (rectangle_edge_proximity[2], rectangle_edge_proximity[3]),
+                          ORANGE, 2)
         
         bounding_boxes = np.array(rects)
         
@@ -308,7 +316,8 @@ def main():
         
         # Use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
-        objects, intersections_list = centroid_tracker.update(bounding_boxes, trackable_objects)
+        objects, intersections_list = centroid_tracker.update(bounding_boxes, trackable_objects,
+                                                              (frame_width, frame_height))
         
         for (object_id, intersections_count, direction) in intersections_list:
             print('(object_id, intersections_count, direction)', (object_id, intersections_count, direction))
