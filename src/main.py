@@ -114,7 +114,8 @@ def get_default_line(width, height):
 
 
 def main():
-    cap = cv2.VideoCapture('../videos/ceiling_camera.mp4')
+    video_path = os.path.join("../videos", VIDEO_FILE)
+    cap = cv2.VideoCapture(video_path)
     
     # Initialize the list of object trackers and corresponding class
     # labels
