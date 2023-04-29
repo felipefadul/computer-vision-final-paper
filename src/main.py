@@ -243,8 +243,7 @@ def main():
                     rects.append(bounding_box)
                     
                     if not SILENT_MODE and DEBUG_MODE and SHOW_CONFIDENCE:
-                        cv2.putText(frame, str(round(confidence[index].item(), 2)), (start_x, start_y),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, GREEN, 2)
+                        print('Confidence: ', round(confidence[index].item(), 2))
         
         # Otherwise, we've already performed detection so let's track multiple objects
         # We should utilize our object *trackers* rather than
