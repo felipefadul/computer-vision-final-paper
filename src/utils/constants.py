@@ -17,7 +17,6 @@ ORANGE = (0, 140, 255)
 
 # Debug parameters
 KEYFRAME_INTERVAL = 4
-OBJECT_ID_TO_DEBUG = 0
 SLEEP_TIME_IN_SECONDS = 0.1
 STOP_FRAME_QUANTITY = 1000  # It is used to stop the video at this frame when SILENT_MODE = True
 VIDEO_ACCELERATION_SPEED = 50

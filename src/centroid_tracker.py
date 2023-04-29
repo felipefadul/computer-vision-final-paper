@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial import distance as dist
 
 from count_polylines_intersections import PolylinesIntersectionsCounter
-from src.utils.constants import OBJECT_ID_TO_DEBUG, CENTROID_TRACKER_MAXIMUM_DISAPPEARED, \
+from src.utils.constants import CENTROID_TRACKER_MAXIMUM_DISAPPEARED, \
     CENTROID_TRACKER_MAXIMUM_DISTANCE
 from src.utils.helper import get_centroid_from_bounding_box, get_rectangle_points_indicating_edge_proximity
 
@@ -53,12 +53,6 @@ class CentroidTracker:
         to = trackable_objects.get(object_id, None)
         intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment = self.polylines_intersections_counter.count_intersections(
             self.default_line, to.centroids)
-        if OBJECT_ID_TO_DEBUG == object_id:
-            print('Test deregister - object_id', object_id)
-            print('Test deregister - to.object_id', to.object_id)
-            print('Test deregister - to.centroids', to.centroids)
-            print('Test deregister - intersections_count', intersections_count)
-            print('Test deregister - intersection_points', intersection_points)
         return intersections_count, intersection_points, first_point_of_the_first_segment, last_point_of_the_last_segment
     
     def update(self, rects, trackable_objects, frame):
