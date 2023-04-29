@@ -129,6 +129,8 @@ def main():
     
     fps_start_time = datetime.datetime.now()
     total_frames = 0
+    frame_height = None
+    frame_width = None
     
     total_down = 0
     total_up = 0
@@ -158,6 +160,10 @@ def main():
         # Grab the next frame from the video file
         was_grabbed, frame = cap.read()
         
+        # Check to see if we have reached the end of the video file
+        if frame is None:
+            break
+        
         if not SILENT_MODE:
             key = cv2.pollKey()
             # If the `q` key was pressed, break from the loop
@@ -165,15 +171,13 @@ def main():
                 break
             handle_video_options(key, cap, is_to_accelerate_video, is_to_move_forward, acceleration_frames_count)
         
-        # Check to see if we have reached the end of the video file
-        if frame is None:
-            break
-        
         # Resize the frame for faster processing
         frame = imutils.resize(frame, width=320)
         
-        # Grab the frame dimensions
-        (frame_height, frame_width) = frame.shape[:2]
+        # If the frame dimensions are empty, set them
+        if frame_height is None or frame_width is None:
+            (frame_height, frame_width) = frame.shape[:2]
+        
         if total_frames == 0:
             print('frame.shape (frame_height, frame_width)', (frame_height, frame_width))
             default_line = get_default_line(frame_width, frame_height)
@@ -186,12 +190,10 @@ def main():
         status = "Waiting"
         rects = []
         
-        # If our correlation object tracker list is empty we first need to
-        # apply an object detector to seed the tracker with something
-        # to actually track
         # Check to see if we should run a more computationally expensive
         # object detection method to aid our tracker
-        if len(trackers) == 0 or total_frames % KEYFRAME_INTERVAL == 0:
+        if (len(trackers) == 0 and total_frames % (KEYFRAME_INTERVAL / 2) == 0) or (
+                len(trackers) != 0 and total_frames % KEYFRAME_INTERVAL == 0):
             # Set the status and initialize our new set of object trackers
             status = "Detecting"
             trackers = []
