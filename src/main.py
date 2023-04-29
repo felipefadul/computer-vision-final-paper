@@ -78,13 +78,13 @@ def convert_polyline_to_array(polyline):
 
 
 def show_info(info, frame):
-    frame_height = frame.shape[0]
+    frame_width = frame.shape[1]
     # Loop over the info tuples and draw them on our frame
     # enumerate = iterator on (index, value)
     for (i, (key, value)) in enumerate(info):
         text = "{}: {}".format(key, value)
-        cv2.putText(frame, text, (10, frame_height - ((i * 20) + 20) - 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, YELLOW, 2)
+        cv2.putText(frame, text, (frame_width - 135, 60 - (i * 15)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, YELLOW, 2)
 
 
 def show_fps(fps_start_time, fps_end_time, total_frames, frame):
