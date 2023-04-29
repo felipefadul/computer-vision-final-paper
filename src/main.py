@@ -96,12 +96,7 @@ def show_fps(fps_start_time, fps_end_time, total_frames, frame):
     
     fps_text = "FPS: {:.2f}".format(fps)
     
-    cv2.putText(frame, fps_text, (5, 30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, GREEN, 2)
-
-
-def show_people_count(count, count_type, position, frame):
-    count_txt = count_type + ": {}".format(count)
-    cv2.putText(frame, count_txt, position, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, YELLOW, 2)
+    cv2.putText(frame, fps_text, (5, 30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, YELLOW, 2)
 
 
 def get_default_line(width, height):
@@ -304,7 +299,6 @@ def main():
                                                               (frame_width, frame_height))
         
         for (object_id, intersections_count, direction) in intersections_list:
-            print('(object_id, intersections_count, direction)', (object_id, intersections_count, direction))
             if direction is None:
                 continue
             if intersections_count % 2 != 0:
@@ -372,14 +366,10 @@ def main():
         ]
         
         fps_end_time = datetime.datetime.now()
-        lpc_count = len(objects)
-        opc_count = len(trackable_objects)
         
         if not SILENT_MODE:
             show_info(info, frame)
             show_fps(fps_start_time, fps_end_time, total_frames, frame)
-            show_people_count(lpc_count, "LPC", (5, 60), frame)
-            show_people_count(opc_count, "OPC", (5, 90), frame)
             
             # Show the output frame
             cv2.imshow("Application", frame)
