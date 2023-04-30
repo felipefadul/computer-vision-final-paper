@@ -21,7 +21,7 @@ pt_model_path = os.path.join("net", "model.pt")
 net = yolov5.load(pt_model_path)
 
 # Set model parameters
-net.conf = NMS_CONFIDENCE_THRESHOLD  # NMS confidence threshold
+net.conf = MINIMUM_DETECTION_CONFIDENCE  # Detection confidence threshold
 net.iou = NMS_IOU_THRESHOLD  # NMS IoU threshold
 net.agnostic = False  # NMS class-agnostic
 net.multi_label = False  # NMS multiple labels per box
