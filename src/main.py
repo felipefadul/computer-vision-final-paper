@@ -55,7 +55,7 @@ def handle_video_options(key, cap, is_to_accelerate_video, is_to_move_forward, a
         cap.set(1, acceleration_frames_count[0])
 
 
-def draw_circle_with_id(object_id, bounding_box, centroid, frame):
+def draw_centroid_with_id(object_id, bounding_box, centroid, frame):
     text = "ID {}".format(object_id)
     center_x, center_y = centroid
     
@@ -68,6 +68,14 @@ def draw_circle_with_id(object_id, bounding_box, centroid, frame):
     # object on the output frame
     cv2.putText(frame, text, position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, BLUE, 2)
     cv2.circle(frame, centroid, 4, BLUE, -1)
+
+
+def draw_object_route(frame, start_point, end_point, centroid=None):
+    if centroid is None:
+        cv2.circle(frame, start_point, 4, RED, -1)
+    else:
+        cv2.circle(frame, centroid, 4, RED, -1)
+    cv2.line(frame, start_point, end_point, RED, 2)
 
 
 def convert_polyline_to_array(polyline):
@@ -324,18 +332,17 @@ def main():
             
             if object_id not in object_ids_list:
                 object_ids_list.append(object_id)
-                start_point = centroid
-                end_point = centroid
-                cv2.circle(frame, start_point, 4, RED, -1)
-                cv2.line(frame, start_point, end_point, RED, 2)
-            else:
-                length = len(centroid_dict[object_id])
-                for point in range(length):
-                    if not point + 1 == length:
+                if not SILENT_MODE and DEBUG_MODE:
+                    start_point = centroid
+                    end_point = centroid
+                    draw_object_route(frame, start_point, end_point)
+            elif not SILENT_MODE and DEBUG_MODE:
+                centroid_dict_length = len(centroid_dict[object_id])
+                for point in range(centroid_dict_length):
+                    if not point + 1 == centroid_dict_length:
                         start_point = (centroid_dict[object_id][point][0], centroid_dict[object_id][point][1])
                         end_point = (centroid_dict[object_id][point + 1][0], centroid_dict[object_id][point + 1][1])
-                        cv2.circle(frame, centroid, 4, RED, -1)
-                        cv2.line(frame, start_point, end_point, RED, 2)
+                        draw_object_route(frame, start_point, end_point, centroid)
             
             # Check to see if a trackable object exists for the current
             # object ID
@@ -353,7 +360,7 @@ def main():
             trackable_objects[object_id] = to
             
             if not SILENT_MODE:
-                draw_circle_with_id(object_id, bounding_box, centroid, frame)
+                draw_centroid_with_id(object_id, bounding_box, centroid, frame)
         
         # Construct a tuple of information we will be displaying on the
         # frame
