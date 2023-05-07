@@ -388,15 +388,16 @@ def main():
         # Update the FPS counter
         fps_lib.update()
     
-    # Stop the timer and display FPS information
+    # Stop the timer and print information to the console
     fps_lib.stop()
-    print("[INFO] elapsed time: {:.2f}".format(fps_lib.elapsed()))
-    print("[INFO] approx. FPS: {:.2f}".format(fps_lib.fps()))
-    print("[INFO] approx. total_frames: ", total_frames)
-    print("[INFO] approx. KEYFRAME_INTERVAL: ", KEYFRAME_INTERVAL)
-    print("[INFO] Final list of IDs counted up (total_up_ids_list): ", total_up_ids_list)
-    print("[INFO] Final list of IDs counted down (total_down_ids_list): ", total_down_ids_list)
-    print("[INFO] Final list of IDs counted (total_count_ids_list): ", total_count_ids_list)
+    
+    print("[INFO] The application has finished!")
+    print("[INFO] Elapsed Time: {:.2f}".format(fps_lib.elapsed()))
+    print("[INFO] Total Frames: ", total_frames)
+    print("[INFO] FPS: {:.2f}".format(fps_lib.fps()))
+    print("[INFO] Total people counted: ", total_count)
+    print("[INFO] Total people counted UP: ", total_up)
+    print("[INFO] Total people counted DOWN: ", total_down)
     
     cv2.destroyAllWindows()
     cap.release()
