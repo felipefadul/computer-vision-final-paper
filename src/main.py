@@ -392,7 +392,7 @@ def main():
     fps_lib.stop()
     
     print("[INFO] The application has finished!")
-    print("[INFO] Elapsed Time: {:.2f}".format(fps_lib.elapsed()))
+    print("[INFO] Elapsed Time (s): {:.2f}".format(fps_lib.elapsed()))
     print("[INFO] Total Frames: ", total_frames)
     print("[INFO] FPS: {:.2f}".format(fps_lib.fps()))
     print("[INFO] Total people counted: ", total_count)
