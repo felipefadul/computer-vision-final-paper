@@ -120,6 +120,10 @@ def main():
     video_path = os.path.join("../videos", VIDEO_FILE)
     cap = cv2.VideoCapture(video_path)
     
+    # Initialize the video writer
+    video_writer = None
+    output_video_path = os.path.join("../videos/output", VIDEO_FILE)
+    
     # Initialize the list of object trackers and corresponding class
     # labels
     trackers = []
@@ -186,6 +190,11 @@ def main():
             default_line = get_default_line(frame_width, frame_height)
             centroid_tracker = CentroidTracker(default_line)
             default_line_points_list = convert_polyline_to_array(default_line)
+        
+        if video_writer is None and not SILENT_MODE:
+            fourcc = cv2.VideoWriter_fourcc("m", "p", "4", "v")
+            video_writer = cv2.VideoWriter(output_video_path, fourcc, 30,
+                                           (frame_width, frame_height), True)
         
         # Initialize the current status along with our list of bounding
         # box rectangles returned by either (1) our object detector or
@@ -377,6 +386,10 @@ def main():
             show_info(info, frame)
             show_fps(fps_start_time, fps_end_time, total_frames, frame)
             
+            # Check to see if we should write the frame to disk
+            if video_writer is not None:
+                video_writer.write(frame)
+            
             # Show the output frame
             cv2.imshow("Application", frame)
         else:
@@ -398,6 +411,9 @@ def main():
     print("[INFO] Total people counted: ", total_count)
     print("[INFO] Total people counted UP: ", total_up)
     print("[INFO] Total people counted DOWN: ", total_down)
+    
+    if video_writer is not None:
+        video_writer.release()
     
     cv2.destroyAllWindows()
     cap.release()
