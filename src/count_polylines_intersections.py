@@ -90,14 +90,14 @@ class PolylinesIntersectionsCounter:
         if not intersection_points_list or len(intersection_points_list) % 2 == 0:
             return None
         
-        # If the first y-point of the first segment is above the y-point of the first intersection AND the last y-point
-        # of the last segment is below the y-point of the last intersection, it means the direction is DOWN.
+        # If the first y-point of the first segment is above the first y-point of the first intersection AND the last
+        # y-point of the last segment is below the last y-point of the last intersection, it means the direction is DOWN.
         if (first_point_of_the_first_segment.y < intersection_points_list[0].y and
                 last_point_of_the_last_segment.y > intersection_points_list[-1].y):
             return DirectionOptions.DOWN
         
-        # If the first y-point of the first segment is below the y-point of the first intersection AND the last y-point
-        # of the last segment is above the y-point of the last intersection, it means the direction is UP.
+        # If the first y-point of the first segment is below the first y-point of the first intersection AND the last
+        # y-point of the last segment is above the last y-point of the last intersection, it means the direction is UP.
         if (first_point_of_the_first_segment.y > intersection_points_list[0].y and
                 last_point_of_the_last_segment.y < intersection_points_list[-1].y):
             return DirectionOptions.UP
